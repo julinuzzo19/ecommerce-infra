@@ -22,7 +22,16 @@ processors:
 
   # Sampling para reducir volumen en producción
   probabilistic_sampler:
-    sampling_percentage: 10 # 10% de traces en producción
+    sampling_percentage: 100 # Para no perder traces en desarrollo
+    # sampling_percentage: 10 # 10% de traces en producción
+
+  filter:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["http.target"] == "/metrics"'
+        - 'attributes["http.route"] == "/metrics"'
+        - 'name == "GET /metrics"'
 
 exporters:
   # Exportar a Tempo
@@ -45,5 +54,5 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch, resource, probabilistic_sampler]
+      processors: [batch, resource, probabilistic_sampler, filter]
       exporters: [otlp/tempo, logging]
