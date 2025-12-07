@@ -1,0 +1,49 @@
+# Configuración del OpenTelemetry Collector
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+  # Agregar atributos a todos los spans
+  resource:
+    attributes:
+      - key: cluster
+        value: ecommerce-cluster
+        action: upsert
+
+  # Sampling para reducir volumen en producción
+  probabilistic_sampler:
+    sampling_percentage: 10 # 10% de traces en producción
+
+exporters:
+  # Exportar a Tempo
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true # red interna de Docker donde no necesitamos encriptación.
+
+  # Logging para debugging
+  logging:
+    loglevel: info
+
+  # Para Grafana Cloud (comentado por defecto)
+  # otlp/grafana:
+  #   endpoint: tempo-xxx.grafana.net:443
+  #   headers:
+  #     authorization: Basic ${GRAFANA_AUTH}
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, resource, probabilistic_sampler]
+      exporters: [otlp/tempo, logging]

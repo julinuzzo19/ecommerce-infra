@@ -1,0 +1,133 @@
+# Reglas de alertas para microservicios
+groups:
+  # Alertas de latencia
+  - name: latency_alerts
+    interval: 30s
+    rules:
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95, 
+            rate(http_request_duration_seconds_bucket[5m])
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latencia P95 alta en {{ $labels.service }}"
+          description: "El servicio {{ $labels.service }} tiene una latencia P95 de {{ $value }}s"
+
+      - alert: VeryHighLatencyP95
+        expr: |
+          histogram_quantile(0.95, 
+            rate(http_request_duration_seconds_bucket[5m])
+          ) > 2
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Latencia P95 crítica en {{ $labels.service }}"
+          description: "El servicio {{ $labels.service }} tiene una latencia P95 de {{ $value }}s"
+
+  # Alertas de error rate
+  - name: error_rate_alerts
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          rate(http_requests_total{status_code=~"5.."}[5m]) / 
+          rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tasa de errores alta en {{ $labels.service }}"
+          description: "{{ $labels.service }} tiene {{ $value | humanizePercentage }} de error rate"
+
+      - alert: CriticalErrorRate
+        expr: |
+          rate(http_requests_total{status_code=~"5.."}[5m]) / 
+          rate(http_requests_total[5m]) > 0.10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tasa de errores crítica en {{ $labels.service }}"
+          description: "{{ $labels.service }} tiene {{ $value | humanizePercentage }} de error rate"
+
+  # Alertas de throughput
+  - name: throughput_alerts
+    interval: 30s
+    rules:
+      - alert: LowThroughput
+        expr: |
+          rate(http_requests_total[5m]) < 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Throughput bajo en {{ $labels.service }}"
+          description: "{{ $labels.service }} está procesando menos de 1 req/s"
+
+  # Alertas de servicios caídos
+  - name: service_down_alerts
+    interval: 15s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Servicio {{ $labels.job }} está caído"
+          description: "No se puede alcanzar el servicio {{ $labels.job }}"
+
+  # Alertas de base de datos
+  - name: database_alerts
+    interval: 30s
+    rules:
+      - alert: HighDatabaseConnections
+        expr: db_connections_active > 18
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Muchas conexiones activas en {{ $labels.service }}"
+          description: "{{ $labels.service }} tiene {{ $value }} conexiones activas (máximo 20)"
+
+      - alert: SlowDatabaseQueries
+        expr: |
+          histogram_quantile(0.95,
+            rate(db_query_duration_seconds_bucket[5m])
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Queries lentas en {{ $labels.service }}"
+          description: "P95 de queries SQL en {{ $labels.service }}: {{ $value }}s"
+
+  # Alertas de llamadas entre servicios
+  - name: internal_calls_alerts
+    interval: 30s
+    rules:
+      - alert: HighInternalServiceLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(internal_service_call_duration_seconds_bucket[5m])
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latencia alta en llamada {{ $labels.from_service }} → {{ $labels.to_service }}"
+          description: "Latencia P95: {{ $value }}s"
+
+      - alert: InternalServiceErrors
+        expr: |
+          rate(internal_service_calls_total{status_code="error"}[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Errores en llamadas {{ $labels.from_service }} → {{ $labels.to_service }}"
+          description: "Tasa de error: {{ $value | humanize }} errores/s"

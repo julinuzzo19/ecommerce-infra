@@ -1,0 +1,71 @@
+{
+    "dashboard": {
+        "title": "Microservices Overview",
+        "tags": [
+            "microservices",
+            "overview"
+        ],
+        "timezone": "browser",
+        "panels": [
+            {
+                "title": "Total Requests per Service",
+                "type": "timeseries",
+                "targets": [
+                    {
+                        "expr": "sum(rate(http_requests_total[5m])) by (service)",
+                        "legendFormat": "{{service}}"
+                    }
+                ]
+            },
+            {
+                "title": "P95 Latency per Service",
+                "type": "timeseries",
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (service, le))",
+                        "legendFormat": "{{service}}"
+                    }
+                ]
+            },
+            {
+                "title": "Error Rate per Service",
+                "type": "timeseries",
+                "targets": [
+                    {
+                        "expr": "sum(rate(http_requests_total{status_code=~\"5..\"}[5m])) by (service) / sum(rate(http_requests_total[5m])) by (service)",
+                        "legendFormat": "{{service}}"
+                    }
+                ]
+            },
+            {
+                "title": "Service Map",
+                "type": "nodeGraph",
+                "targets": [
+                    {
+                        "expr": "sum(rate(internal_service_calls_total[5m])) by (from_service, to_service)"
+                    }
+                ]
+            },
+            {
+                "title": "Database Connections per Service",
+                "type": "timeseries",
+                "targets": [
+                    {
+                        "expr": "db_connections_active",
+                        "legendFormat": "{{service}}"
+                    }
+                ]
+            },
+            {
+                "title": "Cache Hit Rate",
+                "type": "stat",
+                "targets": [
+                    {
+                        "expr": "sum(rate(cache_hits_total[5m])) / (sum(rate(cache_hits_total[5m])) + sum(rate(cache_misses_total[5m])))",
+                        "legendFormat": "Hit Rate"
+                    }
+                ]
+            }
+        ]
+    }
+}

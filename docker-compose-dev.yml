@@ -1,0 +1,426 @@
+services:
+  # ====================================
+  # MICROSERVICES
+  # ====================================
+
+  # Servicio de API Gateway (Express + Proxy)
+  ecommerce-api-gateway:
+    build:
+      context: ./ecommerce-api-gateway
+      dockerfile: Dockerfile.dev
+      args:
+        PORT: 3000
+    container_name: ecommerce-api-gateway
+    restart: unless-stopped
+    env_file:
+      - ./ecommerce-api-gateway/.env.prod
+    ports:
+      - "3000:3000"
+    networks:
+      - ecommerce-network
+    depends_on:
+      otel-collector:
+        condition: service_started
+    command: ["npm", "run", "dev"] # Sobrescribe CMD para recarga en caliente
+    volumes:
+      - ./ecommerce-api-gateway:/app # Montar el código fuente del gateway para cambios en dev
+      - /app/node_modules
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Servicio de Authentication (NestJS)
+  ecommerce-auth-service:
+    build:
+      context: ./ecommerce-auth-service
+      dockerfile: Dockerfile.dev
+      args:
+        PORT: 3010
+    container_name: ecommerce-auth-service
+    restart: unless-stopped
+    depends_on:
+      ecommerce-users-db:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+    env_file:
+      - ./ecommerce-auth-service/.env.prod
+    ports:
+      - "3010:3010"
+    networks:
+      - ecommerce-network
+    command: ["npm", "run", "dev"] # Sobrescribe CMD para recarga en caliente
+    volumes:
+      - ./ecommerce-auth-service:/app # Montar el código fuente del servicio de autenticación para cambios en dev
+      - /app/node_modules
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3010/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Servicio de Usuarios (NestJS)
+  ecommerce-users-service:
+    build:
+      context: ./ecommerce-users-service
+      dockerfile: Dockerfile.dev
+      args:
+        PORT: 3012
+    container_name: ecommerce-users-service
+    restart: unless-stopped
+    depends_on:
+      ecommerce-users-db:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+    env_file:
+      - ./ecommerce-users-service/.env.prod
+    ports:
+      - "3012:3012"
+    networks:
+      - ecommerce-network
+    command: ["npm", "run", "dev"] # Sobrescribe CMD para recarga en caliente
+    volumes:
+      - ./ecommerce-users-service:/app # Montar el código fuente del servicio de autenticación para cambios en dev
+      - /app/node_modules
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3012/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Servicio de Inventario (Express + typeorm)
+  ecommerce-inventory-service:
+    build:
+      context: ./ecommerce-inventory-service
+      dockerfile: Dockerfile.dev
+      args:
+        PORT: 3011
+    container_name: ecommerce-inventory-service
+    restart: unless-stopped
+    depends_on:
+      ecommerce-inventory-db:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    env_file:
+      - ./ecommerce-inventory-service/.env.prod
+    ports:
+      - "3011:3011"
+    networks:
+      - ecommerce-network
+    command: [
+        "sh",
+        "-c",
+        "echo '🔄 Running migrations...' && npm run migration:run && echo '🚀 Starting application...' && npm run dev",
+      ] # Generar, ejecutar migraciones y dev
+    volumes:
+      - ./ecommerce-inventory-service:/app # Montar el código fuente del servicio de inventario para cambios en dev
+      - /app/node_modules
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3011/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Servicio de Order Products (Express + prisma)
+  ecommerce-order-product-service:
+    build:
+      context: ./ecommerce-order-product-service
+      dockerfile: Dockerfile.dev
+      args:
+        PORT: 3600
+    container_name: ecommerce-order-product-service
+    restart: unless-stopped
+    depends_on:
+      ecommerce-order-product-db:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    env_file:
+      - ./ecommerce-order-product-service/.env.prod
+    ports:
+      - "3600:3600"
+    networks:
+      - ecommerce-network
+    # command: ["npm", "run", "dev"] # Sobrescribe CMD para recarga en caliente
+    command: [
+        "sh",
+        "-c",
+        "echo '🔄 Running database migrations...' && npx prisma db push --schema=./src/shared/infrastructure/db/prisma/schema.prisma --accept-data-loss && echo '🚀 Starting application...' && npm run dev",
+      ] # Ejecutar migraciones y luego dev
+    volumes:
+      - ./ecommerce-order-product-service:/app # Montar el código fuente del servicio de orden de productos para cambios en dev
+      - /app/node_modules
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3600/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ====================================
+  # Observability Stack
+  # ====================================
+
+  # OpenTelemetry Collector
+  # Recibe traces de todos los servicios y los envía a Tempo
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.91.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      # Montar archivo de configuración del collector
+      - ./observability/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    ports:
+      # Puerto para recibir traces via OTLP HTTP (lo que usan tus servicios)
+      - "4318:4318"
+      # Puerto para recibir traces via OTLP gRPC (alternativo)
+      - "4317:4317"
+      # Puerto de métricas del propio collector (para monitorear el collector)
+      - "8888:8888"
+    depends_on:
+      - tempo
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  # Grafana Tempo
+  # Almacena y consulta traces distribuidos
+  tempo:
+    image: grafana/tempo:2.3.1
+    container_name: tempo
+    command: ["-config.file=/etc/tempo.yml"]
+    volumes:
+      # Configuración de Tempo
+      - ./observability/tempo-config.yml:/etc/tempo.yml:ro
+      # Volumen persistente para almacenar traces
+      - tempo-data:/tmp/tempo
+    ports:
+      # Puerto HTTP de Tempo (para queries desde Grafana)
+      - "3200:3200"
+      # Puerto para recibir traces directamente (usado por el collector)
+      - "4317"
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  # Prometheus
+  # Scrapeea y almacena métricas de todos los servicios
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      # Habilitar queries remotas (útil para debugging)
+      - "--web.enable-remote-write-receiver"
+      # Retención de datos: 15 días
+      - "--storage.tsdb.retention.time=15d"
+    volumes:
+      # Configuración de Prometheus (dónde scrapear métricas)
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Reglas de alertas (opcional pero recomendado)
+      - ./observability/prometheus-alerts.yml:/etc/prometheus/alerts.yml:ro
+      # Volumen persistente para almacenar métricas
+      - prometheus-data:/prometheus
+    ports:
+      # UI web de Prometheus
+      - "9090:9090"
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+  # Grafana
+  # Visualización de métricas y traces
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: grafana
+    ports:
+      # UI web de Grafana (accedes en http://localhost:3001)
+      - "3001:3000"
+    environment:
+      # Credenciales de administrador
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+      # Deshabilitar registro de usuarios (solo para desarrollo local)
+      - GF_USERS_ALLOW_SIGN_UP=false
+
+      # Habilitar acceso anónimo (útil para desarrollo, NUNCA en producción)
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+
+      # Configuración de logging
+      - GF_LOG_LEVEL=info
+    volumes:
+      # Volumen persistente para dashboards y configuración
+      - grafana-data:/var/lib/grafana
+
+      # Provisioning: datasources configurados automáticamente al iniciar
+      - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+
+      # Provisioning: dashboards configurados automáticamente
+      - ./observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+    depends_on:
+      - prometheus
+      - tempo
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  # ====================================
+  # DATABASES
+  # ====================================
+
+  # Database MySQL for Users Service
+  ecommerce-users-db:
+    image: mysql:8.0
+    container_name: ecommerce-users-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: users_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user
+    ports:
+      - "3307:3306"
+    volumes:
+      - users_mysql_data:/var/lib/mysql
+    networks:
+      - ecommerce-network
+
+  # Database PostgreSQL for Inventory Service
+  ecommerce-inventory-db:
+    image: postgres:15-alpine
+    container_name: ecommerce-inventory-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5434:5432"
+    volumes:
+      - inventory_postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
+
+  # Database PostgreSQL for Order and Product Service
+  ecommerce-order-product-db:
+    image: postgres:15-alpine
+    container_name: ecommerce-order-product-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: order_product_db
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    volumes:
+      - order_product_postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
+
+  # ====================================
+  # RABBITMQ
+  # ====================================
+  rabbitmq:
+    image: rabbitmq:3-management # Uses the RabbitMQ image with the management plugin
+    container_name: rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672" # AMQP port for client connections
+      - "15672:15672" # Management UI port
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq # Persist RabbitMQ data
+      - rabbitmq_log:/var/log/rabbitmq # Persist RabbitMQ logs
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+# ====================================
+# VOLUMES
+# ====================================
+volumes:
+  ## Observability data volumes
+  # Datos de traces (Tempo)
+  tempo-data:
+    driver: local
+  # Datos de métricas (Prometheus)
+  prometheus-data:
+    driver: local
+  # Configuración y dashboards (Grafana)
+  grafana-data:
+    driver: local
+  ##
+  # Users database (MySQL)
+  users_mysql_data:
+    driver: local
+  # Inventory database (PostgreSQL)
+  inventory_postgres_data:
+    driver: local
+  # Order and Product database (PostgreSQL)
+  order_product_postgres_data:
+    driver: local
+  # RabbitMQ data and logs
+  rabbitmq_data:
+    driver: local
+  rabbitmq_log:
+    driver: local
+
+# ====================================
+# NETWORKS
+# ====================================
+networks:
+  ecommerce-network:
+    driver: bridge
