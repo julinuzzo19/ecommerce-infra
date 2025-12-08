@@ -5,9 +5,10 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
+    uid: prometheus
     url: http://prometheus:9090
-    uid: prometheus  
     isDefault: true
+    editable: true
     jsonData:
       timeInterval: 15s
       queryTimeout: 60s
@@ -19,31 +20,24 @@ datasources:
     access: proxy
     uid: tempo
     url: http://tempo:3200
+    isDefault: false
+    editable: true
     jsonData:
+      httpMethod: GET
       tracesToLogs:
-        datasourceUid: "loki"
-        tags: ["trace_id", "span_id"]
-        mappedTags: [{ key: "service.name", value: "service" }]
+        datasourceUid: loki
+        tags: ['trace_id']
+        mappedTags: [{ key: 'service.name', value: 'service' }]
+        filterByTraceID: true
+        filterBySpanID: false
       serviceMap:
-        datasourceUid: "prometheus"
+        datasourceUid: prometheus
       nodeGraph:
         enabled: true
-      tracesToMetrics: ## agregado para transformar spans en métricas
-        datasourceUid: "prometheus"
-        # Reglas de ejemplo para transformar spans en métricas.
-        # Ajusta 'rules' a tus nombres de servicio / operation y tipos de métricas requeridos.
-        rules:
-          - name: "tempo_span_duration_seconds"
-            metricType: "Histogram"
-            value: "duration" # campo del span que representa duración
-            labels:
-              service: "service.name"
-              operation: "span.name"
-          - name: "tempo_span_count_total"
-            metricType: "Counter"
-            value: "1"
-            labels:
-              service: "service.name"
+      search:
+        hide: false
+      lokiSearch:
+        datasourceUid: loki
 
   # Loki para logs
   - name: Loki
@@ -51,21 +45,12 @@ datasources:
     access: proxy
     uid: loki
     url: http://loki:3100
-    editable: false
+    isDefault: false
+    editable: true
     jsonData:
-      # Máximo de líneas que puede devolver una query
       maxLines: 5000
-
-      # Links derivados para correlación
       derivedFields:
-        # Correlación con Tempo via trace_id
         - datasourceUid: tempo
-          matcherRegex: "trace_id[=:]\\s*(\\w+)"
+          matcherRegex: "trace_id[\"=:]\\s*([a-fA-F0-9]+)"
           name: TraceID
           url: "$${__value.raw}"
-
-        # Correlación con métricas vía service
-        - datasourceUid: prometheus
-          matcherRegex: "service[=:]\\s*(\\w+)"
-          name: Service
-          url: ""
