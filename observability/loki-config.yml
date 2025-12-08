@@ -1,81 +1,112 @@
-# Puerto del servidor HTTP
+auth_enabled: false
+
 server:
   http_listen_port: 3100
   grpc_listen_port: 9096
+  log_level: info
 
-# Configuración de autenticación (deshabilitada para desarrollo local)
-auth_enabled: false
+# Configuración de almacenamiento común
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
 
-# Configuración del ingester (componente que escribe logs)
+# Configuración de ingestión
 ingester:
-  # Ciclo de vida de chunks (bloques de logs)
+  chunk_idle_period: 3m
+  chunk_block_size: 262144
+  chunk_retain_period: 1m
   lifecycler:
-    address: 127.0.0.1
     ring:
       kvstore:
         store: inmemory
       replication_factor: 1
-    final_sleep: 0s
 
-  # Configuración de chunks
-  chunk_idle_period: 5m # Tiempo antes de flush si no hay actividad
-  chunk_retain_period: 30s # Tiempo que se retiene el chunk en memoria
-  max_chunk_age: 1h # Edad máxima de un chunk antes de flush
-  chunk_encoding: snappy # Compresión (snappy es balance entre speed y ratio)
-
-# Configuración de límites (evitar OOM)
+# Límites globales
 limits_config:
-  # No rechazar logs por razones de tasa (útil en desarrollo)
-  reject_old_samples: true
-  reject_old_samples_max_age: 168h # 7 días
-
-  # Límites de ingesta
-  ingestion_rate_mb: 10 # MB por segundo por tenant
-  ingestion_burst_size_mb: 20 # Burst permitido
+  # Límites de ingestión
+  ingestion_rate_mb: 10
+  ingestion_burst_size_mb: 20
 
   # Límites de queries
-  max_query_length: 721h # ~30 días
+  max_streams_per_user: 10000
+  max_global_streams_per_user: 0
+  max_query_length: 721h # 30 días
   max_query_lookback: 0 # Sin límite de lookback
-  max_entries_limit_per_query: 5000
 
-# Configuración de almacenamiento
+  # Límites de series
+  max_entries_limit_per_query: 10000
+  max_label_name_length: 1024
+  max_label_value_length: 2048
+  max_label_names_per_series: 30
+
+  # Retención
+  retention_period: 744h # 31 días
+
+  # Tamaño de chunks
+  per_stream_rate_limit: 3MB
+  per_stream_rate_limit_burst: 15MB
+
+# Configuración del schema (estructura de índices)
 schema_config:
   configs:
-    # Schema v11 con index BoltDB y chunks en filesystem
-    - from: 2020-10-24
-      store: boltdb-shipper
+    - from: 2024-01-01
+      store: tsdb
       object_store: filesystem
-      schema: v11
+      schema: v13
       index:
         prefix: index_
         period: 24h
 
-# Configuración de storage
+# Configuración de almacenamiento
 storage_config:
-  boltdb_shipper:
-    active_index_directory: /loki/boltdb-shipper-active
-    cache_location: /loki/boltdb-shipper-cache
+  tsdb_shipper:
+    active_index_directory: /loki/tsdb-index
+    cache_location: /loki/tsdb-cache
     cache_ttl: 24h
-    shared_store: filesystem
 
   filesystem:
     directory: /loki/chunks
 
-# Configuración del compactor (limpieza y compactación)
+# Compactador para optimización de almacenamiento
 compactor:
   working_directory: /loki/compactor
-  shared_store: filesystem
   compaction_interval: 10m
   retention_enabled: true
   retention_delete_delay: 2h
   retention_delete_worker_count: 150
+  delete_request_store: filesystem
 
-# Retención de logs (cuánto tiempo se mantienen)
-# Eliminar logs después de 7 días
-chunk_store_config:
-  max_look_back_period: 168h # 7 días
+# Configuración de queries
+querier:
+  max_concurrent: 20
 
-# Retención por stream
+query_range:
+  align_queries_with_step: true
+  cache_results: true
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+# Tabla manager (manejo de índices)
 table_manager:
   retention_deletes_enabled: true
-  retention_period: 168h # 7 días
+  retention_period: 744h
+
+# Frontend de queries (opcional pero recomendado)
+frontend:
+  log_queries_longer_than: 5s
+  compress_responses: true
+
+# Analytics (opcional)
+analytics:
+  reporting_enabled: false

@@ -2,127 +2,64 @@ server:
   http_listen_port: 9080
   grpc_listen_port: 0
 
-# Posiciones: tracking de qué logs ya se procesaron
 positions:
   filename: /tmp/positions/positions.yaml
 
-# Cliente de Loki: dónde enviar los logs
 clients:
   - url: http://loki:3100/loki/api/v1/push
 
-# Configuración de scraping: de dónde leer logs
 scrape_configs:
-  # Job para leer logs de contenedores Docker
   - job_name: docker
-
-    # Descubrimiento automático de contenedores Docker
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
-
-    # Procesamiento y etiquetado de logs
+        filters:
+          - name: name
+            values: ["ecommerce-*"]
+    
     relabel_configs:
-      # Usar el nombre del contenedor como label 'container'
-      - source_labels: ["__meta_docker_container_name"]
-        regex: "/(.*)"
-        target_label: "container"
-
-      # Agregar nombre del servicio desde el label de Docker Compose
-      - source_labels:
-          ["__meta_docker_container_label_com_docker_compose_service"]
-        target_label: "service"
-
-      # Agregar project de Docker Compose
-      - source_labels:
-          ["__meta_docker_container_label_com_docker_compose_project"]
-        target_label: "project"
-
-      # Solo procesar contenedores que estén running
-      - source_labels: ["__meta_docker_container_state"]
-        regex: "running"
-        action: keep
-
-      # Excluir contenedores de observabilidad para evitar ruido
-      - source_labels: ["container"]
-        regex: "(promtail|loki|grafana|prometheus|tempo|otel-collector)"
-        action: drop
-
-    # Pipeline de procesamiento de logs
+      # Extraer el nombre del contenedor
+      - source_labels: ['__meta_docker_container_name']
+        target_label: 'container_name'
+        regex: '/(.*)'
+        replacement: '$1'
+      
+      # Extraer el nombre del servicio compose
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'compose_service'
+      
+      # Extraer el nombre del proyecto compose
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'compose_project'
+      
+      # Agregar un label estático de job
+      - target_label: 'job'
+        replacement: 'docker'
+    
     pipeline_stages:
-      # Stage 1: Parsear JSON si el log es JSON
+      # Stage 1: Parsear JSON si es posible
       - json:
           expressions:
             level: level
-            msg: msg
-            trace_id: trace_id
-            timestamp: time
-
-      # Stage 2: Extraer el nivel de log como label
-      - labels:
-          level:
-
-      # Stage 3: Si hay timestamp en el log JSON, usarlo
-      - timestamp:
-          source: timestamp
-          format: RFC3339Nano
-
-      # Stage 4: Formatear el output
-      - output:
-          source: msg
-
-  # Job específico para servicios de negocio (más detallado)
-  - job_name: business-services
-
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
-        refresh_interval: 5s
-
-    relabel_configs:
-      # Solo procesar servicios de negocio específicos
-      - source_labels:
-          ["__meta_docker_container_label_com_docker_compose_service"]
-        regex: "(api-gateway|users-service|orders-service|payment-service|notification-service|inventory-service)"
-        action: keep
-
-      - source_labels: ["__meta_docker_container_name"]
-        regex: "/(.*)"
-        target_label: "container"
-
-      - source_labels:
-          ["__meta_docker_container_label_com_docker_compose_service"]
-        target_label: "service"
-
-      - source_labels: ["__meta_docker_container_state"]
-        regex: "running"
-        action: keep
-
-    pipeline_stages:
-      # Parsear JSON estructurado de Pino
-      - json:
-          expressions:
-            level: level
+            time: time
+            service: service
+            environment: environment
             msg: msg
             trace_id: trace_id
             span_id: span_id
-            service: service
-            timestamp: time
-            context: context
-            error: err
-
-      # Extraer labels importantes
+          source: log
+      
+      # Stage 2: Extraer timestamp del campo 'time' si existe
+      - timestamp:
+          source: time
+          format: UnixMs
+      
+      # Stage 3: Agregar labels desde los campos extraídos del JSON
       - labels:
           level:
           service:
-
-      # Agregar timestamp
-      - timestamp:
-          source: timestamp
-          format: RFC3339Nano
-
-      # Formatear mensaje de salida
-      - template:
-          source: output
-          template: "{{ if .trace_id }}[{{ .trace_id }}] {{ end }}{{ .msg }}{{ if .error }} ERROR: {{ .error }}{{ end }}"
-
+          environment:
+      
+      # Stage 4: Output final para debug (opcional, comentar en producción)
       - output:
-          source: output
+          source: log

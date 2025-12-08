@@ -6,6 +6,7 @@ datasources:
     type: prometheus
     access: proxy
     url: http://prometheus:9090
+    uid: prometheus  
     isDefault: true
     jsonData:
       timeInterval: 15s
@@ -16,6 +17,7 @@ datasources:
   - name: Tempo
     type: tempo
     access: proxy
+    uid: tempo
     url: http://tempo:3200
     jsonData:
       tracesToLogs:
@@ -47,11 +49,12 @@ datasources:
   - name: Loki
     type: loki
     access: proxy
+    uid: loki
     url: http://loki:3100
-    editable: true
+    editable: false
     jsonData:
       # Máximo de líneas que puede devolver una query
-      maxLines: 1000
+      maxLines: 5000
 
       # Links derivados para correlación
       derivedFields:
