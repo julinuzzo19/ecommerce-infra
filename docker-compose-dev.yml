@@ -200,7 +200,7 @@ services:
       start_period: 10s
 
   # ====================================
-  # Observability Stack
+  # OBSERVABILITY
   # ====================================
 
   # OpenTelemetry Collector
@@ -271,7 +271,7 @@ services:
       - ecommerce-network
     restart: unless-stopped
     extra_hosts:
-    - "host.docker.internal:host-gateway"
+      - "host.docker.internal:host-gateway"
 
   # Grafana
   # Visualización de métricas y traces
@@ -309,6 +309,43 @@ services:
       - tempo
     networks:
       - ecommerce-network
+    restart: unless-stopped
+
+  #  Logs storage
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: loki
+    user: root
+    command: -config.file=/etc/loki/loki-config.yml
+    ports:
+      - "3100:3100" # Puerto HTTP para queries y push
+    volumes:
+      # Archivo de configuración
+      - ./observability/loki-config.yml:/etc/loki/loki-config.yml:ro
+      # Almacenamiento persistente de logs
+      - loki-data:/loki
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  # Agente para recolectar logs de Docker
+  promtail:
+    image: grafana/promtail:2.9.3
+    container_name: promtail
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      # Configuración de Promtail
+      - ./observability/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+
+      # CRÍTICO: Acceso al socket de Docker para leer logs de contenedores
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+      # Posiciones (tracking de qué logs ya se leyeron)
+      - promtail-positions:/tmp/positions
+    networks:
+      - ecommerce-network
+    depends_on:
+      - loki
     restart: unless-stopped
 
   # ====================================
@@ -416,6 +453,11 @@ volumes:
   rabbitmq_data:
     driver: local
   rabbitmq_log:
+    driver: local
+  # Logs storage for Loki and Promtail
+  loki-data:
+    driver: local
+  promtail-positions:
     driver: local
 
 # ====================================

@@ -1,0 +1,81 @@
+# Puerto del servidor HTTP
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+
+# Configuración de autenticación (deshabilitada para desarrollo local)
+auth_enabled: false
+
+# Configuración del ingester (componente que escribe logs)
+ingester:
+  # Ciclo de vida de chunks (bloques de logs)
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+
+  # Configuración de chunks
+  chunk_idle_period: 5m # Tiempo antes de flush si no hay actividad
+  chunk_retain_period: 30s # Tiempo que se retiene el chunk en memoria
+  max_chunk_age: 1h # Edad máxima de un chunk antes de flush
+  chunk_encoding: snappy # Compresión (snappy es balance entre speed y ratio)
+
+# Configuración de límites (evitar OOM)
+limits_config:
+  # No rechazar logs por razones de tasa (útil en desarrollo)
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h # 7 días
+
+  # Límites de ingesta
+  ingestion_rate_mb: 10 # MB por segundo por tenant
+  ingestion_burst_size_mb: 20 # Burst permitido
+
+  # Límites de queries
+  max_query_length: 721h # ~30 días
+  max_query_lookback: 0 # Sin límite de lookback
+  max_entries_limit_per_query: 5000
+
+# Configuración de almacenamiento
+schema_config:
+  configs:
+    # Schema v11 con index BoltDB y chunks en filesystem
+    - from: 2020-10-24
+      store: boltdb-shipper
+      object_store: filesystem
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+
+# Configuración de storage
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /loki/boltdb-shipper-active
+    cache_location: /loki/boltdb-shipper-cache
+    cache_ttl: 24h
+    shared_store: filesystem
+
+  filesystem:
+    directory: /loki/chunks
+
+# Configuración del compactor (limpieza y compactación)
+compactor:
+  working_directory: /loki/compactor
+  shared_store: filesystem
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+
+# Retención de logs (cuánto tiempo se mantienen)
+# Eliminar logs después de 7 días
+chunk_store_config:
+  max_look_back_period: 168h # 7 días
+
+# Retención por stream
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 168h # 7 días

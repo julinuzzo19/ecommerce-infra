@@ -42,3 +42,27 @@ datasources:
             value: "1"
             labels:
               service: "service.name"
+
+  # Loki para logs
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      # Máximo de líneas que puede devolver una query
+      maxLines: 1000
+
+      # Links derivados para correlación
+      derivedFields:
+        # Correlación con Tempo via trace_id
+        - datasourceUid: tempo
+          matcherRegex: "trace_id[=:]\\s*(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"
+
+        # Correlación con métricas vía service
+        - datasourceUid: prometheus
+          matcherRegex: "service[=:]\\s*(\\w+)"
+          name: Service
+          url: ""
