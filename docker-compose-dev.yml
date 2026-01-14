@@ -78,26 +78,27 @@ services:
   # Servicio de Usuarios (NestJS)
   ecommerce-users-service:
     build:
-      context: ./ecommerce-users-service
+      context: ./serverless-users-service
       dockerfile: Dockerfile.dev
       args:
         PORT: 3012
     container_name: ecommerce-users-service
     restart: unless-stopped
     depends_on:
-      ecommerce-users-db:
+      dynamodb:
         condition: service_started
       otel-collector:
         condition: service_started
     env_file:
-      - ./ecommerce-users-service/.env.prod
+      - ./serverless-users-service/.env.docker
     ports:
       - "3012:3012"
     networks:
       - ecommerce-network
-    command: ["npm", "run", "dev"] # Sobrescribe CMD para recarga en caliente
+    environment:
+      - STAGE=docker
     volumes:
-      - ./ecommerce-users-service:/app # Montar el código fuente del servicio de autenticación para cambios en dev
+      - ./serverless-users-service:/app # Montar el código fuente del servicio de usuarios (serverless) para cambios en dev
       - /app/node_modules
     healthcheck:
       test:
@@ -368,6 +369,20 @@ services:
       - users_mysql_data:/var/lib/mysql
     networks:
       - ecommerce-network
+
+  # DynamoDB Local for Serverless Users Service
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: ecommerce-users-dynamodb
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
+    working_dir: /home/dynamodblocal
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./serverless-users-service/.dynamodb:/home/dynamodblocal/data
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
 
   # Database PostgreSQL for Inventory Service
   ecommerce-inventory-db:
