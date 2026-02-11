@@ -1,3 +1,5 @@
+.vscode
 localstack
 .env
 TODO.MD
+NOTES.MD
