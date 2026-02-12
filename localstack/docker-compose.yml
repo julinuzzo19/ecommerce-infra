@@ -6,11 +6,13 @@ services:
       - "127.0.0.1:4566:4566" # LocalStack Gateway
       - "127.0.0.1:4510-4559:4510-4559" # external services port range
     environment:
-      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
       - DEBUG=${DEBUG:-0}
       - DATA_DIR=/var/lib/localstack
       - PERSISTENCE=1
 
     volumes:
-      - "./localstack:/var/lib/localstack"
+      - "localstack:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+volumes:
+  localstack:
