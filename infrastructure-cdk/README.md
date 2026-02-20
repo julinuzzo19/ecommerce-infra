@@ -13,7 +13,8 @@ Este proyecto provisiona de manera **declarativa** e **idempotente** toda la inf
 
 ### Users Service Stack
 
-- **DynamoDB Table**: `users-service-db-{stage}`
+- **DynamoDB Table**: `users-service-db`
+  - **Nota:** Nombre fijo sin sufijo de stage para compatibilidad con docker-compose local
   - Partition Key: `id` (String)
   - Global Secondary Index: `EmailIndex` (permite búsquedas por email)
   - Billing: PAY_PER_REQUEST (on-demand)

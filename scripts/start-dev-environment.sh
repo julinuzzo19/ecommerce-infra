@@ -244,6 +244,30 @@ if [ "$SKIP_CDK" = false ]; then
 fi
 
 # ============================================
+# PASO 6: EJECUTAR SEEDS DE BASES DE DATOS
+# ============================================
+
+if [ "$ONLY_INFRASTRUCTURE" = false ]; then
+    print_step "Paso 6: Poblando bases de datos con seeds"
+
+    cd "$PROJECT_ROOT"
+
+    # Esperar unos segundos más para asegurar que las DBs están completamente listas
+    print_info "Esperando a que las bases de datos estén completamente listas..."
+    sleep 15
+
+    # Ejecutar seeds
+    print_info "Ejecutando seed-all.sh..."
+    if cd db-seeds && ./seed-all.sh; then
+        print_success "Seeds ejecutados exitosamente"
+        cd "$PROJECT_ROOT"
+    else
+        print_warning "Error ejecutando seeds. Puedes ejecutarlos manualmente con: make seed-all"
+        cd "$PROJECT_ROOT"
+    fi
+fi
+
+# ============================================
 # RESUMEN FINAL
 # ============================================
 
@@ -280,11 +304,24 @@ if [ "$ONLY_INFRASTRUCTURE" = false ]; then
     echo "  • RabbitMQ Management: http://localhost:15672 (user/password)"
 fi
 
+if [ "$ONLY_INFRASTRUCTURE" = false ]; then
+    echo ""
+    echo -e "${COLOR_INFO}🌱 DATOS DE PRUEBA:${COLOR_RESET}"
+    echo "  • 5 usuarios creados (password: password123)"
+    echo "  • 10 productos con stock"
+    echo "  • 6 órdenes de ejemplo"
+    echo ""
+    echo "  Login de prueba:"
+    echo "    Email: john.doe@example.com"
+    echo "    Password: password123"
+fi
+
 echo ""
 echo -e "${COLOR_INFO}🛠️  COMANDOS ÚTILES:${COLOR_RESET}"
 echo "  • Ver logs LocalStack:     docker logs -f ecommerce-localstack"
 echo "  • Ver todos los logs:      docker-compose -f docker-compose-dev.yml logs -f"
 echo "  • Detener todo:            ./stop-dev-environment.sh"
+echo "  • Re-poblar datos:         make seed-all"
 echo "  • Ver recursos LocalStack: aws --endpoint-url=http://localhost:4566 dynamodb list-tables"
 
 echo ""

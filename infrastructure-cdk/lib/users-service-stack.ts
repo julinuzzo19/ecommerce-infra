@@ -87,7 +87,9 @@ export class UsersServiceStack extends cdk.Stack {
      * Alternativa: PROVISIONED con auto-scaling para cargas predecibles
      */
     this.usersTable = new dynamodb.Table(this, "UsersTable", {
-      tableName: `users-service-db-${stage}`,
+      // Nombre fijo sin sufijo de stage para compatibilidad con docker-compose local
+      // En LocalStack usamos siempre el mismo nombre
+      tableName: "users-service-db",
 
       // Partition key (HASH)
       partitionKey: {
