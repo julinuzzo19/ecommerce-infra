@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: ecommerce-localstack
+    ports:
+      # Edge port - single entry point for all services
+      - "4566:4566"
+      # External service port range (for advanced use cases)
+      - "4510-4559:4510-4559"
+    environment:
+      # Services to activate (comma-separated)
+      # Para este proyecto: DynamoDB, SQS, CloudFormation
+      SERVICES: dynamodb,sqs,cloudformation,sts,iam,s3
+
+      # Enable debug mode for troubleshooting
+      DEBUG: 1
+
+      # Data persistence directory inside container
+      DATA_DIR: /tmp/localstack/data
+
+      # Docker host (para que LocalStack pueda invocar Lambdas en Docker)
+      DOCKER_HOST: unix:///var/run/docker.sock
+
+      # Hostname externo (cómo los clientes acceden a LocalStack)
+      LOCALSTACK_HOST: localhost.localstack.cloud:4566
+
+      # Configuración de persistencia
+      PERSISTENCE: 1
+
+      # AWS region por defecto
+      DEFAULT_REGION: us-east-1
+
+      # Eager service loading (inicia servicios al arranque, no lazy)
+      EAGER_SERVICE_LOADING: 1
+
+      # Lambda executor (cómo se ejecutan las Lambdas)
+      # docker: ejecuta en contenedores Docker separados
+      # local: ejecuta en el mismo contenedor (más rápido, menos realista)
+      LAMBDA_EXECUTOR: local
+
+      # Configuración de logs
+      LS_LOG: trace
+
+    volumes:
+      # Persistir datos de LocalStack entre reinicios
+      - ./infrastructure-cdk/.localstack:/tmp/localstack
+
+      # Acceso al socket de Docker (necesario para LAMBDA_EXECUTOR=docker)
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # Opcional: Scripts de inicialización que se ejecutan al arranque
+      # - ./infrastructure-cdk/localstack-init:/docker-entrypoint-initaws.d
+
+    networks:
+      - ecommerce-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    restart: unless-stopped
+
+networks:
+  ecommerce-network:
+    driver: bridge

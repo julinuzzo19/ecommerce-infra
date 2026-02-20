@@ -7,3 +7,7 @@ TODO.md
 /ecommerce-users-service/
 /ecommerce-order-product-service/
 *.bkp
+
+# LocalStack data
+infrastructure-cdk/.localstack/*
+!infrastructure-cdk/.localstack/.gitignore
