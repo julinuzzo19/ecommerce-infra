@@ -1,0 +1,5 @@
+# Ignorar todos los datos de LocalStack
+*
+
+# Pero mantener este archivo .gitignore
+!.gitignore
