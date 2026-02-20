@@ -125,6 +125,24 @@ aws-buckets: ## Lista los buckets S3 en LocalStack
 aws-health: ## Verifica el estado de LocalStack
 	@curl -s http://localhost:4566/_localstack/health | jq '.'
 
+##@ Database Seeds
+
+seed-all: ## Ejecuta todos los seeds de bases de datos
+	@echo "$(COLOR_INFO)🌱 Seeding all databases...$(COLOR_RESET)"
+	@cd db-seeds && ./seed-all.sh
+
+seed-mysql: ## Seed solo MySQL (Auth)
+	@cd db-seeds && npm run seed:mysql
+
+seed-dynamodb: ## Seed solo DynamoDB (Users)
+	@cd db-seeds && npm run seed:dynamodb
+
+seed-inventory: ## Seed solo PostgreSQL Inventory
+	@cd db-seeds && npm run seed:inventory
+
+seed-orders: ## Seed solo PostgreSQL Order-Product
+	@cd db-seeds && npm run seed:orders
+
 ##@ Testing
 
 test-health: ## Verifica el health de todos los microservicios

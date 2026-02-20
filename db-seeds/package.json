@@ -1,0 +1,22 @@
+{
+  "name": "ecommerce-db-seeds",
+  "version": "1.0.0",
+  "description": "Database seed scripts for ecommerce microservices",
+  "scripts": {
+    "seed:all": "npm run seed:mysql && npm run seed:dynamodb && npm run seed:inventory && npm run seed:orders",
+    "seed:mysql": "node scripts/seed-mysql.js",
+    "seed:dynamodb": "node dynamodb-users-seed.js",
+    "seed:inventory": "node scripts/seed-inventory.js",
+    "seed:orders": "node scripts/seed-orders.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.509.0",
+    "@aws-sdk/util-dynamodb": "^3.509.0",
+    "mysql2": "^3.9.1",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {},
+  "keywords": ["seed", "database", "ecommerce"],
+  "author": "",
+  "license": "MIT"
+}

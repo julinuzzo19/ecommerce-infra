@@ -1,0 +1,136 @@
+{
+  "users": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "role": "USER",
+      "avatar": "https://i.pravatar.cc/150?img=1",
+      "password": "$scrypt$N=32768,r=8,p=1,maxmem=67108864$9K8GZBqWpPzOgF8oOPKPkQ$vE/6k0xLqF4K6fLqZlC3qT0KYhXhf9Vl1K2J3K4L5M6N7O8P9Q0R1S2T3U4V5W6X7Y8Z9A0B1C2D3E4F5G6H7I8J9K0"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com",
+      "role": "USER",
+      "avatar": "https://i.pravatar.cc/150?img=5",
+      "password": "$scrypt$N=32768,r=8,p=1,maxmem=67108864$8L9HACrXqQAPhG9pPQLQlR$wF0AlGmMyG5L7gMrAmD4rU1LZiYig0Wm2L3K4L5M6N7O8P9Q0R1S2T3U4V5W6X7Y8Z9A0B1C2D3E4F5G6H7I8J9K0"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "name": "Admin User",
+      "email": "admin@example.com",
+      "role": "ADMIN",
+      "avatar": "https://i.pravatar.cc/150?img=12",
+      "password": "$scrypt$N=32768,r=8,p=1,maxmem=67108864$7M0IBDsYrRBQiH0qQRMRmS$xG1BmHnNzH6M8hNsBnE5sV2MajZjh1Xn3M4L5M6N7O8P9Q0R1S2T3U4V5W6X7Y8Z9A0B1C2D3E4F5G6H7I8J9K0"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440004",
+      "name": "Alice Johnson",
+      "email": "alice.johnson@example.com",
+      "role": "USER",
+      "avatar": "https://i.pravatar.cc/150?img=20",
+      "password": "$scrypt$N=32768,r=8,p=1,maxmem=67108864$6N1JCEtZsSCRjI1rRSNSnT$yH2CnIoOAI7N9iOtCoF6tW3NbkAki2Yo4N5M6N7O8P9Q0R1S2T3U4V5W6X7Y8Z9A0B1C2D3E4F5G6H7I8J9K0"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440005",
+      "name": "Bob Williams",
+      "email": "bob.williams@example.com",
+      "role": "USER",
+      "avatar": "https://i.pravatar.cc/150?img=33",
+      "password": "$scrypt$N=32768,r=8,p=1,maxmem=67108864$5O2KDFuAtTDSkJ2sTTOToU$zI3DoJpPBJ8O0jPuDpG7uX4OclBlj3Zp5O6N7O8P9Q0R1S2T3U4V5W6X7Y8Z9A0B1C2D3E4F5G6H7I8J9K0"
+    }
+  ],
+  "products": [
+    {
+      "sku": "LAPTOP-DELL-XPS15",
+      "name": "Dell XPS 15",
+      "description": "High-performance laptop with 15.6 inch 4K display, Intel i7, 16GB RAM, 512GB SSD",
+      "price": "1499.99",
+      "category": "Electronics",
+      "stockAvailable": 25,
+      "stockReserved": 3
+    },
+    {
+      "sku": "PHONE-IPHONE-14PRO",
+      "name": "iPhone 14 Pro",
+      "description": "Apple iPhone 14 Pro with A16 Bionic chip, 6.1 inch Super Retina XDR display, 128GB",
+      "price": "999.99",
+      "category": "Electronics",
+      "stockAvailable": 50,
+      "stockReserved": 5
+    },
+    {
+      "sku": "HEADPHONES-SONY-WH1000XM5",
+      "name": "Sony WH-1000XM5",
+      "description": "Industry-leading noise canceling wireless headphones",
+      "price": "399.99",
+      "category": "Electronics",
+      "stockAvailable": 100,
+      "stockReserved": 10
+    },
+    {
+      "sku": "KEYBOARD-LOGITECH-MX",
+      "name": "Logitech MX Keys",
+      "description": "Advanced wireless illuminated keyboard",
+      "price": "99.99",
+      "category": "Accessories",
+      "stockAvailable": 75,
+      "stockReserved": 2
+    },
+    {
+      "sku": "MOUSE-LOGITECH-MX3",
+      "name": "Logitech MX Master 3",
+      "description": "Advanced wireless mouse",
+      "price": "99.99",
+      "category": "Accessories",
+      "stockAvailable": 80,
+      "stockReserved": 4
+    },
+    {
+      "sku": "MONITOR-DELL-U2720Q",
+      "name": "Dell UltraSharp 27 4K",
+      "description": "27-inch 4K USB-C monitor",
+      "price": "599.99",
+      "category": "Electronics",
+      "stockAvailable": 30,
+      "stockReserved": 1
+    },
+    {
+      "sku": "WEBCAM-LOGITECH-C920",
+      "name": "Logitech C920 HD Pro",
+      "description": "Full HD 1080p webcam",
+      "price": "79.99",
+      "category": "Accessories",
+      "stockAvailable": 120,
+      "stockReserved": 8
+    },
+    {
+      "sku": "TABLET-IPAD-AIR",
+      "name": "iPad Air",
+      "description": "Apple iPad Air with M1 chip, 10.9 inch Liquid Retina display, 64GB",
+      "price": "599.99",
+      "category": "Electronics",
+      "stockAvailable": 40,
+      "stockReserved": 6
+    },
+    {
+      "sku": "SPEAKER-SONOS-ONE",
+      "name": "Sonos One",
+      "description": "Smart speaker with voice control",
+      "price": "199.99",
+      "category": "Electronics",
+      "stockAvailable": 60,
+      "stockReserved": 0
+    },
+    {
+      "sku": "CHARGER-ANKER-65W",
+      "name": "Anker 65W USB-C Charger",
+      "description": "Fast charging USB-C charger",
+      "price": "49.99",
+      "category": "Accessories",
+      "stockAvailable": 200,
+      "stockReserved": 15
+    }
+  ]
+}
