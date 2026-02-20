@@ -11,9 +11,6 @@ services:
       # Enable debug mode for troubleshooting
       DEBUG: 1
 
-      # Data persistence directory inside container
-      DATA_DIR: /tmp/localstack/data
-
       # Docker host (para que LocalStack pueda invocar Lambdas en Docker)
       DOCKER_HOST: unix:///var/run/docker.sock
 
@@ -39,7 +36,8 @@ services:
 
     volumes:
       # Persistir datos de LocalStack entre reinicios
-      - ./infrastructure-cdk/.localstack:/tmp/localstack
+      # Usar /var/lib/localstack en lugar de /tmp/localstack para evitar conflictos
+      - ./infrastructure-cdk/.localstack:/var/lib/localstack
 
       # Acceso al socket de Docker (necesario para LAMBDA_EXECUTOR=docker)
       - /var/run/docker.sock:/var/run/docker.sock

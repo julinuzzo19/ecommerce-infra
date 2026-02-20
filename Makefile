@@ -22,27 +22,27 @@ help: ## Muestra esta ayuda
 
 start: ## Inicia todo el entorno de desarrollo (LocalStack + servicios + CDK)
 	@echo "$(COLOR_INFO)🚀 Iniciando entorno de desarrollo completo...$(COLOR_RESET)"
-	@./start-dev-environment.sh
+	@./scripts/start-dev-environment.sh
 
 start-infra: ## Inicia solo infraestructura (LocalStack + CDK)
 	@echo "$(COLOR_INFO)🏗️  Iniciando solo infraestructura...$(COLOR_RESET)"
-	@./start-dev-environment.sh --only-infrastructure
+	@./scripts/start-dev-environment.sh --only-infrastructure
 
 start-services: ## Inicia solo los microservicios (sin CDK)
 	@echo "$(COLOR_INFO)🚀 Iniciando microservicios...$(COLOR_RESET)"
-	@./start-dev-environment.sh --skip-cdk
+	@./scripts/start-dev-environment.sh --skip-cdk
 
 start-build: ## Inicia el entorno reconstruyendo imágenes
 	@echo "$(COLOR_INFO)🔨 Reconstruyendo e iniciando entorno...$(COLOR_RESET)"
-	@./start-dev-environment.sh --build
+	@./scripts/start-dev-environment.sh --build
 
 stop: ## Detiene todos los servicios
 	@echo "$(COLOR_INFO)🛑 Deteniendo entorno de desarrollo...$(COLOR_RESET)"
-	@./stop-dev-environment.sh
+	@./scripts/stop-dev-environment.sh
 
 clean: ## Detiene servicios y elimina volúmenes (⚠️ pérdida de datos)
 	@echo "$(COLOR_INFO)🧹 Limpiando entorno completo...$(COLOR_RESET)"
-	@./stop-dev-environment.sh --clean
+	@./scripts/stop-dev-environment.sh --clean
 
 restart: stop start ## Reinicia todo el entorno
 
@@ -50,6 +50,30 @@ restart: stop start ## Reinicia todo el entorno
 
 logs: ## Muestra logs de todos los servicios
 	@$(COMPOSE_DEV) logs -f
+
+rebuild-gateway: ## Rebuild + restart API Gateway (usa después de cambiar .env o dependencias)
+	@echo "$(COLOR_INFO)🔨 Rebuilding API Gateway...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-api-gateway
+
+rebuild-auth: ## Rebuild + restart Auth Service
+	@echo "$(COLOR_INFO)🔨 Rebuilding Auth Service...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-auth-service
+
+rebuild-users: ## Rebuild + restart Users Service
+	@echo "$(COLOR_INFO)🔨 Rebuilding Users Service...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-users-service
+
+rebuild-inventory: ## Rebuild + restart Inventory Service
+	@echo "$(COLOR_INFO)🔨 Rebuilding Inventory Service...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-inventory-service
+
+rebuild-orders: ## Rebuild + restart Order-Product Service
+	@echo "$(COLOR_INFO)🔨 Rebuilding Order-Product Service...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-order-product-service
+
+rebuild-all: ## Rebuild + restart todos los microservicios
+	@echo "$(COLOR_INFO)🔨 Rebuilding todos los servicios...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate
 
 logs-api-gateway: ## Logs del API Gateway
 	@docker logs -f ecommerce-api-gateway

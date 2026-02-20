@@ -1,0 +1,972 @@
+{
+  "info": {
+    "_postman_id": "83c4e5a5-faea-4cd1-b19e-809298b79e4b",
+    "name": "E-commerce",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12654315",
+    "_collection_link": "https://go.postman.co/collection/12654315-83c4e5a5-faea-4cd1-b19e-809298b79e4b?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "API Gateway",
+      "item": [
+        {
+          "name": "GET orders from API Gateway",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2ZjJiNTdlMC1kM2EwLTQ4NzgtOTRmYS1mYzlmOWEwZThlMTgiLCJlbWFpbCI6InRlc3RAZ21haWwuY29tIiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NTk2Mjc4MDMsImV4cCI6MTc1OTYzMTQwMywiYXVkIjoiYXBpLWdhdGV3YXkiLCJpc3MiOiJhdXRoLXNlcnZpY2UifQ.A3402U3D7KGH3ZIVTpkYtj0w8gu8ZqoTcyowzRdzeBA",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{API_GATEWAY}}/ecommerce/orders",
+              "host": [
+                "{{API_GATEWAY}}"
+              ],
+              "path": [
+                "ecommerce",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Gateway",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\":\"testC@gmail.com\",\r\n    \"password\":\"test\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{API_GATEWAY}}/auth/login",
+              "host": [
+                "{{API_GATEWAY}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Health Check",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{API_GATEWAY}}/health",
+              "host": [
+                "{{API_GATEWAY}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET products Inventory GATEWAY",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{API_GATEWAY}}/inventory",
+              "host": [
+                "{{API_GATEWAY}}"
+              ],
+              "path": [
+                "inventory"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth Service",
+      "item": [
+        {
+          "name": "Signup user",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\":\"testC@gmail.com\",\r\n    \"password\":\"test\",\r\n    \"name\":\"testC\"\r\n    }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AUTH_SERVICE_URL}}/api/v1/auth/signup",
+              "host": [
+                "{{AUTH_SERVICE_URL}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\":\"test@gmail.com\",\r\n    \"password\":\"test\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AUTH_SERVICE_URL}}/api/v1/auth/login",
+              "host": [
+                "{{AUTH_SERVICE_URL}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout user",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{AUTH_SERVICE_URL}}/api/v1/auth/logout",
+              "host": [
+                "{{AUTH_SERVICE_URL}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{AUTH_SERVICE_URL}}/health",
+              "host": [
+                "{{AUTH_SERVICE_URL}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Order Product Service",
+      "item": [
+        {
+          "name": "Create product",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2wiOiJBRE1JTiIsImlhdCI6MTc0ODU0NTI0NX0.qHozReR9bKb7RjLFCcDYyrZYcHYKakOjDw8apvg33mI",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"id\":\"{{$guid}}\",\r\n    \"name\":\"{{$randomProductName}}\",\r\n    \"description\":\"{{$randomProductAdjective}}\",\r\n    \"price\":{{$randomPrice}},\r\n    \"category\":\"{{$randomCompanyName}}\",\r\n    \"sku\":\"AAAAAA4\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_PRODUCT_SERVICE}}/api/v1/products",
+              "host": [
+                "{{ORDER_PRODUCT_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create order",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Función para generar números aleatorios\r",
+                  "function getRandomInt(min, max) {\r",
+                  "    return Math.floor(Math.random() * (max - min + 1)) + min;\r",
+                  "}\r",
+                  "\r",
+                  "function getRandomFloat(min, max) {\r",
+                  "    return (Math.random() * (max - min) + min).toFixed(2);\r",
+                  "}\r",
+                  "\r",
+                  "// Generar todos los valores\r",
+                  "pm.environment.set(\"guid1\", pm.variables.replaceIn(\"{{$guid}}\"));\r",
+                  "pm.environment.set(\"guid2\", pm.variables.replaceIn(\"{{$guid}}\"));\r",
+                  "pm.environment.set(\"guid3\", pm.variables.replaceIn(\"{{$guid}}\"));\r",
+                  "pm.environment.set(\"orderNumber\", getRandomInt(1, 10000));\r",
+                  "pm.environment.set(\"quantity1\", getRandomInt(1, 20));\r",
+                  "pm.environment.set(\"quantity2\", getRandomInt(1, 50));\r",
+                  "pm.environment.set(\"price1\", getRandomFloat(10, 500));\r",
+                  "pm.environment.set(\"price2\", getRandomFloat(10, 500));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2wiOiJBRE1JTiIsImlhdCI6MTc0ODU0NTI0NX0.qHozReR9bKb7RjLFCcDYyrZYcHYKakOjDw8apvg33mI",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"id\":\"{{$guid}}\",\r\n  \"customerId\": \"5e37af04-e706-4258-8b73-e8294716d156\",\r\n  \"orderNumber\": \"{{orderNumber}}\",\r\n  \"status\": \"PENDING\",\r\n  \"items\": [\r\n    {\r\n    \"id\": \"{{$guid}}\",\r\n    \"sku\": \"AAAAAA1\",\r\n    \"quantity\": 5,\r\n    \"price\": {{price1}}\r\n  },\r\n  {\r\n    \"id\": \"{{$guid}}\",\r\n    \"sku\": \"AAAAAA2\",\r\n    \"quantity\": {{quantity2}},\r\n    \"price\": {{price2}}\r\n  }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_PRODUCT_SERVICE}}/api/v1/orders",
+              "host": [
+                "{{ORDER_PRODUCT_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create order Test",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Función para generar números aleatorios\r",
+                  "function getRandomInt(min, max) {\r",
+                  "    return Math.floor(Math.random() * (max - min + 1)) + min;\r",
+                  "}\r",
+                  "\r",
+                  "function getRandomFloat(min, max) {\r",
+                  "    return (Math.random() * (max - min) + min).toFixed(2);\r",
+                  "}\r",
+                  "\r",
+                  "// Generar todos los valores\r",
+                  "pm.environment.set(\"guid1\", pm.variables.replaceIn(\"{{$guid}}\"));\r",
+                  "pm.environment.set(\"guid2\", pm.variables.replaceIn(\"{{$guid}}\"));\r",
+                  "pm.environment.set(\"guid3\", pm.variables.replaceIn(\"{{$guid}}\"));\r",
+                  "pm.environment.set(\"orderNumber\", getRandomInt(1, 10000));\r",
+                  "pm.environment.set(\"quantity1\", getRandomInt(1, 20));\r",
+                  "pm.environment.set(\"quantity2\", getRandomInt(1, 50));\r",
+                  "pm.environment.set(\"price1\", getRandomFloat(10, 500));\r",
+                  "pm.environment.set(\"price2\", getRandomFloat(10, 500));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2wiOiJBRE1JTiIsImlhdCI6MTc0ODU0NTI0NX0.qHozReR9bKb7RjLFCcDYyrZYcHYKakOjDw8apvg33mI",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"id\": \"4493bb08-5633-45d1-a02d-5a8aae0423cc\",\r\n  \"customerId\": \"3969fa29-e686-460a-8722-4cd0a6330590\",\r\n  \"orderNumber\": \"ORD-001\",\r\n  \"status\": \"PENDING\",\r\n  \"items\": [\r\n    {\r\n       \"productId\": \"450c887f-e886-4d0a-8621-ec6abd99d58c\",\r\n      \"quantity\": 2,\r\n      \"price\": 10.99\r\n    }\r\n   \r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_PRODUCT_SERVICE}}/api/v1/orders",
+              "host": [
+                "{{ORDER_PRODUCT_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create customer",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2wiOiJBRE1JTiIsImlhdCI6MTc0ODU0NTI0NX0.qHozReR9bKb7RjLFCcDYyrZYcHYKakOjDw8apvg33mI",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"id\":\"{{$guid}}\",\r\n    \"name\":\"{{$randomFullName}}\",\r\n    \"email\":\"{{$randomEmail}}\",\r\n    \"phoneNumber\":\"{{$randomPhoneNumber}}\",\r\n    \"address\":{\r\n         \"street\":\"{{$randomStreetName}}\",\r\n          \"city\":\"{{$randomCity}}\",\r\n           \"state\":\"{{$randomCity}}\",\r\n            \"zipCode\":\"{{$randomCountryCode}}\",\r\n             \"country\":\"{{$randomCountry}}\"\r\n    }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_PRODUCT_SERVICE}}/api/v1/customers",
+              "host": [
+                "{{ORDER_PRODUCT_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET products",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2wiOiJBRE1JTiIsImlhdCI6MTc0ODU0NTI0NX0.qHozReR9bKb7RjLFCcDYyrZYcHYKakOjDw8apvg33mI",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_PRODUCT_SERVICE}}/api/v1/products",
+              "host": [
+                "{{ORDER_PRODUCT_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Health Check",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{ORDER_PRODUCT_SERVICE}}/health",
+              "host": [
+                "{{ORDER_PRODUCT_SERVICE}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET orders",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_PRODUCT_SERVICE}}/api/v1/orders",
+              "host": [
+                "{{ORDER_PRODUCT_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET orders by id",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2wiOiJBRE1JTiIsImlhdCI6MTc0ODU0NTI0NX0.qHozReR9bKb7RjLFCcDYyrZYcHYKakOjDw8apvg33mI",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_PRODUCT_SERVICE}}/api/v1/orders/9d260658-7fc2-47ff-b0ac-cbcf384b2ecf",
+              "host": [
+                "{{ORDER_PRODUCT_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "orders",
+                "9d260658-7fc2-47ff-b0ac-cbcf384b2ecf"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET customers",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2wiOiJBRE1JTiIsImlhdCI6MTc0ODU0NTI0NX0.qHozReR9bKb7RjLFCcDYyrZYcHYKakOjDw8apvg33mI",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{ORDER_PRODUCT_SERVICE}}/api/v1/customers",
+              "host": [
+                "{{ORDER_PRODUCT_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inventory Service",
+      "item": [
+        {
+          "name": "GET products Inventory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{INVENTORY_SERVICE}}/api/v1/inventory",
+              "host": [
+                "{{INVENTORY_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inventory"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Product Inventory",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"sku\":\"AAAAAA1\",\r\n    \"stockReserved\":0,\r\n    \"stockAvailable\":4000\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE}}/api/v1/inventory",
+              "host": [
+                "{{INVENTORY_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inventory"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Check stock available",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "[{\r\n    \"sku\":\"AAAAAA1\",\r\n    \"quantity\":0\r\n},\r\n{\r\n    \"sku\":\"AAAAAA1\",\r\n    \"quantity\":0\r\n}\r\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE}}/api/v1/inventory",
+              "host": [
+                "{{INVENTORY_SERVICE}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inventory"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Health Check",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{INVENTORY_SERVICE}}/health",
+              "host": [
+                "{{INVENTORY_SERVICE}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users service",
+      "item": [
+        {
+          "name": "Health Check",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\":\"test@gmail.com\",\r\n    \"password\":\"test\"\r\n}"
+            },
+            "url": {
+              "raw": "{{USERS_SERVICE_URL}}/health",
+              "host": [
+                "{{USERS_SERVICE_URL}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Find all",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{API_GATEWAY}}/users",
+              "host": [
+                "{{API_GATEWAY}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Find all Gateway",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{API_GATEWAY}}/users",
+              "host": [
+                "{{API_GATEWAY}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\":\"test local\",\r\n    \"email\":\"testlocal@gmail.com\",\r\n    \"role\":\"USER\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{API_GATEWAY}}/users",
+              "host": [
+                "{{API_GATEWAY}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create user Gateway",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "XSRF-TOKEN",
+                "value": "secret-csrf-token-cookie-value",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\":\"test1\",\r\n    \"email\":\"test1@gmail.com\",\r\n    \"role\":\"USER\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{API_GATEWAY}}/users",
+              "host": [
+                "{{API_GATEWAY}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users Serverless",
+      "item": [
+        {
+          "name": "Find all",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:4000/users",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "4000",
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

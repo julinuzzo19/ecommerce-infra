@@ -5,7 +5,8 @@ set -e
 # CONFIGURACIÓN
 # ============================================
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Directorio raíz del proyecto (un nivel arriba de scripts/)
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Colores
 COLOR_SUCCESS="\033[0;32m"

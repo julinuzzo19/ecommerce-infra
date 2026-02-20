@@ -4,10 +4,50 @@ Infraestructura como código (IaC) para el proyecto Ecommerce Microservices usan
 
 ## 🎯 Objetivo
 
-Este proyecto provisiona de manera **declarativa** e **idempotente** toda la infraestructura AWS necesaria para los servicios serverless, reemplazando scripts imperativos como:
+Este proyecto provisiona de manera **declarativa** e **idempotente** toda la infraestructura AWS necesaria para los servicios serverless.
 
-- ❌ `serverless-users-service/scripts/dynamodb/init-users-table.js` (creación manual imperativa)
-- ❌ Creación de colas SQS en el código del container DI (runtime)
+## 🔀 Dos Formas de Crear la Infraestructura
+
+### **📍 Desarrollo Local (LocalStack)** ← Por defecto
+
+Para desarrollo local, usamos un **script directo de AWS CLI** que es más simple y rápido:
+
+```bash
+# Automático (parte de make start)
+make start
+
+# Manual
+./infrastructure-cdk/scripts/create-dynamodb-table.sh
+```
+
+**Por qué no CDK en local:**
+- ❌ CDK requiere bootstrap complejo con buckets S3
+- ❌ LocalStack Community tiene limitaciones de CloudFormation
+- ❌ Problemas de DNS con hostnames `.localhost` en WSL
+- ❌ Slow (30-60 segundos vs 5 segundos con CLI directo)
+
+### **🚀 Producción (AWS Real)** ← Usa CDK
+
+Para desplegar a AWS real, **SÍ usamos AWS CDK**:
+
+```bash
+# Configurar credenciales y región
+export AWS_PROFILE=production
+export AWS_REGION=us-east-1
+export STAGE=prod
+
+# Deploy con CDK
+cd infrastructure-cdk
+npm run bootstrap  # Solo primera vez
+npm run deploy
+```
+
+**Por qué SÍ CDK en producción:**
+- ✅ Infrastructure as Code (IaC) versionado en Git
+- ✅ `cdk diff` muestra cambios antes de aplicar
+- ✅ Rollback automático si algo falla
+- ✅ Reutilizable para múltiples ambientes (dev, staging, prod)
+- ✅ Tags, permisos, y encryption gestionados correctamente
 
 ## 🏗️ Recursos Provisionados
 

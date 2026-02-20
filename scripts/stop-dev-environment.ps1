@@ -29,7 +29,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$PROJECT_ROOT = $PSScriptRoot
+# Directorio raíz del proyecto (un nivel arriba de scripts/)
+$PROJECT_ROOT = Split-Path -Parent $PSScriptRoot
 
 # Colores
 $COLOR_SUCCESS = "Green"

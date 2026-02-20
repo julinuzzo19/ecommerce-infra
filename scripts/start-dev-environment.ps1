@@ -42,7 +42,8 @@ param(
 # ============================================
 
 $ErrorActionPreference = "Stop"
-$PROJECT_ROOT = $PSScriptRoot
+# Directorio raíz del proyecto (un nivel arriba de scripts/)
+$PROJECT_ROOT = Split-Path -Parent $PSScriptRoot
 $CDK_DIR = Join-Path $PROJECT_ROOT "infrastructure-cdk"
 
 # Colores para output

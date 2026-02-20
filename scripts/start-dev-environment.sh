@@ -5,7 +5,8 @@ set -e
 # CONFIGURACIÓN
 # ============================================
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Directorio raíz del proyecto (un nivel arriba de scripts/)
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CDK_DIR="$PROJECT_ROOT/infrastructure-cdk"
 
 # Colores
@@ -192,54 +193,112 @@ if [ "$SKIP_CDK" = false ]; then
 fi
 
 # ============================================
-# PASO 4: BOOTSTRAP CDK (SI ES NECESARIO)
+# PASO 4: CREAR INFRAESTRUCTURA AWS
 # ============================================
+# Para desarrollo local (LocalStack): usa script directo de AWS CLI
+# Para producción (AWS real): usa AWS CDK
 
 if [ "$SKIP_CDK" = false ]; then
-    print_step "Paso 4: Bootstrap de AWS CDK en LocalStack"
+    # Determinar entorno
+    STAGE="${STAGE:-dev}"
 
-    cd "$CDK_DIR"
+    if [ "$STAGE" = "dev" ] || [ "$STAGE" = "local" ]; then
+        # ====================================
+        # DESARROLLO LOCAL - LocalStack
+        # ====================================
+        print_step "Paso 4: Creando tabla DynamoDB en LocalStack"
 
-    # Configurar variables de entorno para LocalStack
-    export AWS_REGION=us-east-1
-    export AWS_ACCESS_KEY_ID=test
-    export AWS_SECRET_ACCESS_KEY=test
-    export AWS_ENDPOINT_URL=http://localhost:4566
-    export STAGE=dev
+        export AWS_REGION=us-east-1
+        export AWS_ACCESS_KEY_ID=test
+        export AWS_SECRET_ACCESS_KEY=test
+        export AWS_ENDPOINT_URL=http://localhost:4566
 
-    print_info "Ejecutando CDK bootstrap contra LocalStack..."
-    print_info "Endpoint: http://localhost:4566"
+        print_info "Entorno: DESARROLLO LOCAL (LocalStack)"
+        print_info "Método: AWS CLI directo (más simple que CDK para LocalStack)"
+        echo ""
+        print_warning "⚠️  CDK NO se ejecuta en desarrollo local"
+        print_info "    Para producción: export STAGE=prod && ./scripts/start-dev-environment.sh"
+        echo ""
 
-    # Ejecutar bootstrap (puede fallar si ya está hecho, es normal)
-    if npm run bootstrap > /dev/null 2>&1; then
-        print_success "Bootstrap completado exitosamente"
+        # Ejecutar script de creación de tabla
+        if "$CDK_DIR/scripts/create-dynamodb-table.sh"; then
+            print_success "Tabla DynamoDB lista en LocalStack"
+        else
+            print_error "Error creando tabla DynamoDB"
+            exit 1
+        fi
     else
-        print_warning "Bootstrap falló o ya estaba hecho (esto es normal si ya corriste el script antes)"
-    fi
-fi
+        # ====================================
+        # PRODUCCIÓN - AWS Real
+        # ====================================
+        print_step "Paso 4: Desplegando infraestructura con AWS CDK"
 
-# ============================================
-# PASO 5: DESPLEGAR INFRAESTRUCTURA CON CDK
-# ============================================
+        export AWS_REGION="${AWS_REGION:-us-east-1}"
+        export CDK_DEFAULT_ACCOUNT="${AWS_ACCOUNT_ID:-}"
+        export CDK_DEFAULT_REGION="$AWS_REGION"
 
-if [ "$SKIP_CDK" = false ]; then
-    print_step "Paso 5: Desplegando infraestructura con CDK"
+        print_info "Entorno: PRODUCCIÓN (AWS Real)"
+        print_info "Método: AWS CDK (Infrastructure as Code)"
+        print_info "Stage: $STAGE"
+        print_info "Región: $AWS_REGION"
+        echo ""
 
-    cd "$CDK_DIR"
+        # Verificar credenciales de AWS
+        if [ -z "$AWS_ACCOUNT_ID" ]; then
+            print_warning "AWS_ACCOUNT_ID no está definido"
+            print_info "Intentando obtener de AWS CLI..."
+            AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
 
-    print_info "Ejecutando CDK diff para ver cambios..."
-    npm run diff
+            if [ -z "$AWS_ACCOUNT_ID" ]; then
+                print_error "No se pudo obtener AWS Account ID"
+                print_error "Configura tus credenciales: aws configure"
+                exit 1
+            fi
 
-    echo ""
-    read -p "¿Deseas desplegar la infraestructura? (y/N): " -n 1 -r
-    echo ""
+            export CDK_DEFAULT_ACCOUNT="$AWS_ACCOUNT_ID"
+            print_success "AWS Account ID: $AWS_ACCOUNT_ID"
+        fi
 
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        print_info "Desplegando stack..."
-        npm run deploy -- --require-approval never
-        print_success "Infraestructura desplegada exitosamente"
-    else
-        print_info "Deployment cancelado por el usuario"
+        cd "$CDK_DIR"
+
+        # Bootstrap CDK (solo si es necesario)
+        print_info "Verificando bootstrap de CDK..."
+        if ! aws cloudformation describe-stacks --stack-name CDKToolkit >/dev/null 2>&1; then
+            print_warning "CDK no está bootstrapped en esta cuenta/región"
+            echo ""
+            read -p "¿Deseas ejecutar CDK bootstrap ahora? (y/N): " -n 1 -r
+            echo ""
+
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                print_info "Ejecutando CDK bootstrap..."
+                npm run bootstrap
+                print_success "Bootstrap completado"
+            else
+                print_error "Bootstrap cancelado - no se puede continuar sin bootstrap"
+                exit 1
+            fi
+        else
+            print_success "CDK ya está bootstrapped"
+        fi
+
+        # Deploy con CDK
+        echo ""
+        print_info "Ejecutando CDK diff..."
+        npm run diff || print_warning "No hay cambios o primera vez"
+
+        echo ""
+        read -p "¿Deseas desplegar la infraestructura a AWS? (y/N): " -n 1 -r
+        echo ""
+
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            print_info "Desplegando stack UsersServiceStack..."
+            npm run deploy -- --require-approval never
+            print_success "Infraestructura desplegada exitosamente en AWS"
+        else
+            print_info "Deployment cancelado por el usuario"
+        fi
+
+        cd "$PROJECT_ROOT"
     fi
 fi
 

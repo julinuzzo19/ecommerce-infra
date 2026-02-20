@@ -254,7 +254,7 @@ cd ..
 docker-compose -f docker-compose-dev.yml up -d
 
 # O usar el script de inicio
-./start-dev-environment.sh
+./scripts/start-dev-environment.sh
 ```
 
 ### Error: "Cannot find module"
