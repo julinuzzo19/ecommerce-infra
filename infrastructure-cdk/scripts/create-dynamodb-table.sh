@@ -24,7 +24,8 @@ if aws --endpoint-url="$ENDPOINT_URL" dynamodb describe-table --table-name "$TAB
     aws --endpoint-url="$ENDPOINT_URL" dynamodb describe-table \
         --table-name "$TABLE_NAME" \
         --query 'Table.[TableName,TableStatus,ItemCount,GlobalSecondaryIndexes[0].IndexName]' \
-        --output table
+        --output table \
+        --no-cli-pager
 
     exit 0
 fi
@@ -66,7 +67,8 @@ echo "📊 Detalles de la tabla:"
 aws --endpoint-url="$ENDPOINT_URL" dynamodb describe-table \
     --table-name "$TABLE_NAME" \
     --query 'Table.{Name:TableName,Status:TableStatus,Keys:KeySchema,GSI:GlobalSecondaryIndexes[0].IndexName}' \
-    --output table
+    --output table \
+    --no-cli-pager
 
 echo ""
 echo "🎉 ¡Listo! Ahora puedes usar la tabla '$TABLE_NAME' en LocalStack"
