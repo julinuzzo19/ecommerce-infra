@@ -1,7 +1,7 @@
 # Makefile para Ecommerce Microservices Project
 # Simplifica comandos comunes de desarrollo
 
-.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders
+.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders aws-scan-users
 
 # Variables
 COMPOSE_DEV := docker-compose -f docker-compose-dev.yml
@@ -148,6 +148,13 @@ aws-buckets: ## Lista los buckets S3 en LocalStack
 
 aws-health: ## Verifica el estado de LocalStack
 	@curl -s http://localhost:4566/_localstack/health | jq '.'
+
+aws-scan-users: ## Muestra todos los items de la tabla DynamoDB users-service-db
+	@aws --endpoint-url=http://localhost:8000 dynamodb scan \
+		--table-name users-service-db \
+		--projection-expression "id, email, #n, #r" \
+		--expression-attribute-names '{"#n":"name","#r":"role"}' \
+		| jq '.Items[] | {id: .id.S, email: .email.S, name: .name.S, role: .role.S}'
 
 ##@ Database Seeds
 
