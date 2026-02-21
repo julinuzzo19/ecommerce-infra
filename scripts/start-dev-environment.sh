@@ -311,9 +311,26 @@ if [ "$ONLY_INFRASTRUCTURE" = false ]; then
 
     cd "$PROJECT_ROOT"
 
-    # Esperar unos segundos más para asegurar que las DBs están completamente listas
-    print_info "Esperando a que las bases de datos estén completamente listas..."
-    sleep 15
+    # Esperar a que prisma db push haya creado las tablas en order-product-db
+    # El servicio corre `prisma db push` al arrancar, lo cual puede tardar más que el sleep genérico
+    print_info "Esperando a que prisma db push cree las tablas en order_product_db..."
+    ORDER_DB_READY=false
+    for i in $(seq 1 30); do
+        TABLE_EXISTS=$(docker exec ecommerce-order-product-db psql -U root -d order_product_db -tAc \
+            "SELECT 1 FROM information_schema.tables WHERE table_schema='app' AND table_name='order_items';" 2>/dev/null || true)
+        if [ "$TABLE_EXISTS" = "1" ]; then
+            ORDER_DB_READY=true
+            print_success "Tablas de order_product_db listas (intento $i)"
+            break
+        fi
+        echo -n "."
+        sleep 3
+    done
+
+    if [ "$ORDER_DB_READY" = false ]; then
+        print_warning "Las tablas de order_product_db no están listas. El seed puede fallar."
+        print_info "Puedes ejecutar manualmente después: make seed-orders"
+    fi
 
     # Ejecutar seeds
     print_info "Ejecutando seed-all.sh..."

@@ -1,7 +1,7 @@
 # Makefile para Ecommerce Microservices Project
 # Simplifica comandos comunes de desarrollo
 
-.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test
+.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders
 
 # Variables
 COMPOSE_DEV := docker-compose -f docker-compose-dev.yml
@@ -166,6 +166,17 @@ seed-inventory: ## Seed solo PostgreSQL Inventory
 
 seed-orders: ## Seed solo PostgreSQL Order-Product
 	@cd db-seeds && npm run seed:orders
+
+##@ Bases de Datos
+
+db-users: ## Abre psql en ecommerce-users-db (MySQL - Auth Service, puerto 3307)
+	@docker exec -it ecommerce-users-db mysql -u user -puser users_db
+
+db-inventory: ## Abre psql en ecommerce-inventory-db (PostgreSQL - Inventory Service, puerto 5434)
+	@docker exec -it ecommerce-inventory-db psql -U root -d inventory_db
+
+db-orders: ## Abre psql en ecommerce-order-product-db (PostgreSQL - Order-Product Service, puerto 5432)
+	@docker exec -it -e PGOPTIONS="--search_path=app" ecommerce-order-product-db psql -U root -d order_product_db
 
 ##@ Testing
 

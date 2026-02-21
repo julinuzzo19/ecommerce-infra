@@ -4,6 +4,9 @@
 -- Tablas: products, addresses, customers, orders, order_items
 -- ============================================
 
+-- Las tablas están en el schema "app" (definido en prisma.config.ts)
+SET search_path TO app;
+
 -- Limpiar datos existentes (solo en desarrollo)
 -- Importante: el orden importa debido a las foreign keys
 TRUNCATE TABLE order_items CASCADE;
