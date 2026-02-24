@@ -1,7 +1,7 @@
 # Makefile para Ecommerce Microservices Project
 # Simplifica comandos comunes de desarrollo
 
-.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders aws-scan-users
+.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders aws-scan-users open-all
 
 # Variables
 COMPOSE_DEV := docker-compose -f docker-compose-dev.yml
@@ -194,6 +194,22 @@ test-health: ## Verifica el health de todos los microservicios
 	@echo "\nUsers Service:"; curl -s http://localhost:3012/health | jq '.' || echo "❌ No disponible"
 	@echo "\nInventory Service:"; curl -s http://localhost:3011/health | jq '.' || echo "❌ No disponible"
 	@echo "\nOrder-Product Service:"; curl -s http://localhost:3600/health | jq '.' || echo "❌ No disponible"
+
+##@ VSCode
+
+open-all: ## Abre cada microservicio en una ventana VSCode separada (con logs automáticos al abrir)
+	@echo "$(COLOR_INFO)💻 Abriendo proyectos en VSCode...$(COLOR_RESET)"
+	@echo "$(COLOR_INFO)   Nota: acepta el permiso 'Allow' en VSCode para ejecutar tasks automáticas$(COLOR_RESET)"
+	@code --new-window $(CURDIR)/ecommerce-api-gateway
+	@sleep 1
+	@code --new-window $(CURDIR)/ecommerce-auth-service
+	@sleep 1
+	@code --new-window $(CURDIR)/serverless-users-service
+	@sleep 1
+	@code --new-window $(CURDIR)/ecommerce-inventory-service
+	@sleep 1
+	@code --new-window $(CURDIR)/ecommerce-order-product-service
+	@echo "$(COLOR_SUCCESS)✅ 5 ventanas VSCode abiertas — cada una lanzará sus logs de Docker automáticamente$(COLOR_RESET)"
 
 ##@ Utilidades
 
