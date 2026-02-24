@@ -18,7 +18,7 @@ const path = require("path");
 
 // Configuración
 const region = process.env.REGION || process.env.AWS_REGION || "us-east-1";
-const endpoint = process.env.DYNAMODB_ENDPOINT || "http://localhost:8000";
+const endpoint = process.env.DYNAMODB_ENDPOINT || "http://localhost:4566";
 const tableName = process.env.USERS_TABLE || "users-service-db";
 
 const clientConfig = {

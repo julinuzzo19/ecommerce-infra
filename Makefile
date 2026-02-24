@@ -150,7 +150,7 @@ aws-health: ## Verifica el estado de LocalStack
 	@curl -s http://localhost:4566/_localstack/health | jq '.'
 
 aws-scan-users: ## Muestra todos los items de la tabla DynamoDB users-service-db
-	@aws --endpoint-url=http://localhost:8000 dynamodb scan \
+	@aws --endpoint-url=http://localhost:4566 dynamodb scan \
 		--table-name users-service-db \
 		--projection-expression "id, email, #n, #r" \
 		--expression-attribute-names '{"#n":"name","#r":"role"}' \

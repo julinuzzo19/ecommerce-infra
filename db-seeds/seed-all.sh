@@ -58,8 +58,8 @@ fi
 print_success "PostgreSQL (Order-Product) disponible"
 
 # DynamoDB
-if ! curl -s http://localhost:8000 > /dev/null 2>&1; then
-    print_error "DynamoDB Local no está disponible en http://localhost:8000"
+if ! curl -s http://localhost:4566 > /dev/null 2>&1; then
+    print_error "DynamoDB Local no está disponible en http://localhost:4566"
     exit 1
 fi
 print_success "DynamoDB Local disponible"
@@ -107,7 +107,7 @@ echo ""
 
 echo "💡 Puedes verificar los datos con:"
 echo "  • MySQL:     docker exec -it ecommerce-users-db mysql -uroot -proot users_db"
-echo "  • DynamoDB:  aws --endpoint-url=http://localhost:8000 dynamodb scan --table-name users-service-db"
+echo "  • DynamoDB:  aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name users-service-db"
 echo "  • Inventory: docker exec -it ecommerce-inventory-db psql -U root -d inventory_db"
 echo "  • Orders:    docker exec -it ecommerce-order-product-db psql -U root -d order_product_db"
 echo ""
