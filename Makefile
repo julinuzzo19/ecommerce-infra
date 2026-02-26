@@ -4,8 +4,8 @@
 .PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders aws-scan-users open-all
 
 # Variables
-COMPOSE_DEV := docker-compose -f docker-compose-dev.yml
-COMPOSE_LOCALSTACK := docker-compose -f docker-compose.localstack.yml
+COMPOSE_DEV := docker compose -f docker-compose-dev.yml
+COMPOSE_LOCALSTACK := docker compose -f docker-compose.localstack.yml
 CDK_DIR := infrastructure-cdk
 
 # Color output
@@ -17,6 +17,47 @@ COLOR_SUCCESS := \033[0;32m
 
 help: ## Muestra esta ayuda
 	@awk 'BEGIN {FS = ":.*##"; printf "\n$(COLOR_INFO)Uso:$(COLOR_RESET)\n  make $(COLOR_INFO)<target>$(COLOR_RESET)\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  $(COLOR_INFO)%-20s$(COLOR_RESET) %s\n", $$1, $$2 } /^##@/ { printf "\n$(COLOR_SUCCESS)%s$(COLOR_RESET)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+
+
+##@ Utilidades
+
+shell-api-gateway: ## Abre shell en API Gateway container
+	@docker exec -it ecommerce-api-gateway sh
+
+shell-auth: ## Abre shell en Auth Service container
+	@docker exec -it ecommerce-auth-service sh
+
+shell-localstack: ## Abre shell en LocalStack container
+	@docker exec -it ecommerce-localstack sh
+
+prune: ## Limpia recursos de Docker no utilizados
+	@docker system prune -f
+	@docker volume prune -f
+
+urls: ## Muestra todas las URLs de servicios
+	@echo "$(COLOR_SUCCESS)🌐 URLs de Servicios:$(COLOR_RESET)\n"
+	@echo "Microservicios:"
+	@echo "  • API Gateway:         http://localhost:3000"
+	@echo "  • Auth Service:        http://localhost:3010"
+	@echo "  • Users Service:       http://localhost:3012"
+	@echo "  • Inventory Service:   http://localhost:3011"
+	@echo "  • Order-Product:       http://localhost:3600"
+	@echo ""
+	@echo "Infraestructura:"
+	@echo "  • LocalStack:          http://localhost:4566"
+	@echo "  • LocalStack Health:   http://localhost:4566/_localstack/health"
+	@echo ""
+	@echo "Observabilidad:"
+	@echo "  • Grafana:             http://localhost:3001 (admin/admin)"
+	@echo "  • Prometheus:          http://localhost:9090"
+	@echo "  • RabbitMQ:            http://localhost:15672 (user/password)"
+	@echo ""
+	@echo "Bases de datos:"
+	@echo "  • MySQL (Auth):        localhost:3307"
+	@echo "  • DynamoDB Local:      http://localhost:8000"
+	@echo "  • PostgreSQL (Inv):    localhost:5434"
+	@echo "  • PostgreSQL (Order):  localhost:5432"
+
 
 ##@ Desarrollo
 
@@ -46,59 +87,17 @@ clean: ## Detiene servicios y elimina volúmenes (⚠️ pérdida de datos)
 
 restart: stop start ## Reinicia todo el entorno
 
-##@ Docker
 
-logs: ## Muestra logs de todos los servicios
-	@$(COMPOSE_DEV) logs -f
+##@ Testing
 
-rebuild-gateway: ## Rebuild + restart API Gateway (usa después de cambiar .env o dependencias)
-	@echo "$(COLOR_INFO)🔨 Rebuilding API Gateway...$(COLOR_RESET)"
-	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-api-gateway
+test-health: ## Verifica el health de todos los microservicios
+	@echo "$(COLOR_INFO)🏥 Verificando health de servicios...$(COLOR_RESET)\n"
+	@echo "API Gateway:"; curl -s http://localhost:3000/health | jq '.' || echo "❌ No disponible"
+	@echo "\nAuth Service:"; curl -s http://localhost:3010/health | jq '.' || echo "❌ No disponible"
+	@echo "\nUsers Service:"; curl -s http://localhost:3012/health | jq '.' || echo "❌ No disponible"
+	@echo "\nInventory Service:"; curl -s http://localhost:3011/health | jq '.' || echo "❌ No disponible"
+	@echo "\nOrder-Product Service:"; curl -s http://localhost:3600/health | jq '.' || echo "❌ No disponible"
 
-rebuild-auth: ## Rebuild + restart Auth Service
-	@echo "$(COLOR_INFO)🔨 Rebuilding Auth Service...$(COLOR_RESET)"
-	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-auth-service
-
-rebuild-users: ## Rebuild + restart Users Service
-	@echo "$(COLOR_INFO)🔨 Rebuilding Users Service...$(COLOR_RESET)"
-	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-users-service
-
-rebuild-inventory: ## Rebuild + restart Inventory Service
-	@echo "$(COLOR_INFO)🔨 Rebuilding Inventory Service...$(COLOR_RESET)"
-	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-inventory-service
-
-rebuild-orders: ## Rebuild + restart Order-Product Service
-	@echo "$(COLOR_INFO)🔨 Rebuilding Order-Product Service...$(COLOR_RESET)"
-	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-order-product-service
-
-rebuild-all: ## Rebuild + restart todos los microservicios
-	@echo "$(COLOR_INFO)🔨 Rebuilding todos los servicios...$(COLOR_RESET)"
-	@$(COMPOSE_DEV) up -d --build --force-recreate
-
-logs-api-gateway: ## Logs del API Gateway
-	@docker logs -f ecommerce-api-gateway
-
-logs-auth: ## Logs del Auth Service
-	@docker logs -f ecommerce-auth-service
-
-logs-users: ## Logs del Users Service
-	@docker logs -f ecommerce-users-service
-
-logs-inventory: ## Logs del Inventory Service
-	@docker logs -f ecommerce-inventory-service
-
-logs-orders: ## Logs del Order-Product Service
-	@docker logs -f ecommerce-order-product-service
-
-logs-localstack: ## Logs de LocalStack
-	@docker logs -f ecommerce-localstack
-
-ps: ## Lista todos los contenedores corriendo
-	@docker ps
-
-status: ## Muestra el estado de todos los servicios
-	@echo "$(COLOR_SUCCESS)📊 Estado de servicios:$(COLOR_RESET)\n"
-	@docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep ecommerce || echo "No hay servicios corriendo"
 
 ##@ CDK
 
@@ -156,6 +155,8 @@ aws-scan-users: ## Muestra todos los items de la tabla DynamoDB users-service-db
 		--expression-attribute-names '{"#n":"name","#r":"role"}' \
 		| jq '.Items[] | {id: .id.S, email: .email.S, name: .name.S, role: .role.S}'
 
+
+
 ##@ Database Seeds
 
 seed-all: ## Ejecuta todos los seeds de bases de datos
@@ -185,15 +186,6 @@ db-inventory: ## Abre psql en ecommerce-inventory-db (PostgreSQL - Inventory Ser
 db-orders: ## Abre psql en ecommerce-order-product-db (PostgreSQL - Order-Product Service, puerto 5432)
 	@docker exec -it -e PGOPTIONS="--search_path=app" ecommerce-order-product-db psql -U root -d order_product_db
 
-##@ Testing
-
-test-health: ## Verifica el health de todos los microservicios
-	@echo "$(COLOR_INFO)🏥 Verificando health de servicios...$(COLOR_RESET)\n"
-	@echo "API Gateway:"; curl -s http://localhost:3000/health | jq '.' || echo "❌ No disponible"
-	@echo "\nAuth Service:"; curl -s http://localhost:3010/health | jq '.' || echo "❌ No disponible"
-	@echo "\nUsers Service:"; curl -s http://localhost:3012/health | jq '.' || echo "❌ No disponible"
-	@echo "\nInventory Service:"; curl -s http://localhost:3011/health | jq '.' || echo "❌ No disponible"
-	@echo "\nOrder-Product Service:"; curl -s http://localhost:3600/health | jq '.' || echo "❌ No disponible"
 
 ##@ VSCode
 
@@ -211,41 +203,56 @@ open-all: ## Abre cada microservicio en una ventana VSCode separada (con logs au
 	@code --new-window $(CURDIR)/ecommerce-order-product-service
 	@echo "$(COLOR_SUCCESS)✅ 5 ventanas VSCode abiertas — cada una lanzará sus logs de Docker automáticamente$(COLOR_RESET)"
 
-##@ Utilidades
 
-shell-api-gateway: ## Abre shell en API Gateway container
-	@docker exec -it ecommerce-api-gateway sh
 
-shell-auth: ## Abre shell en Auth Service container
-	@docker exec -it ecommerce-auth-service sh
+##@ Docker
 
-shell-localstack: ## Abre shell en LocalStack container
-	@docker exec -it ecommerce-localstack sh
+logs: ## Muestra logs de todos los servicios
+	@$(COMPOSE_DEV) logs -f
 
-prune: ## Limpia recursos de Docker no utilizados
-	@docker system prune -f
-	@docker volume prune -f
+rb-gateway: ## Rebuild + restart API Gateway (usa después de cambiar .env o dependencias)
+	@echo "$(COLOR_INFO)🔨 Rebuilding API Gateway...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-api-gateway
 
-urls: ## Muestra todas las URLs de servicios
-	@echo "$(COLOR_SUCCESS)🌐 URLs de Servicios:$(COLOR_RESET)\n"
-	@echo "Microservicios:"
-	@echo "  • API Gateway:         http://localhost:3000"
-	@echo "  • Auth Service:        http://localhost:3010"
-	@echo "  • Users Service:       http://localhost:3012"
-	@echo "  • Inventory Service:   http://localhost:3011"
-	@echo "  • Order-Product:       http://localhost:3600"
-	@echo ""
-	@echo "Infraestructura:"
-	@echo "  • LocalStack:          http://localhost:4566"
-	@echo "  • LocalStack Health:   http://localhost:4566/_localstack/health"
-	@echo ""
-	@echo "Observabilidad:"
-	@echo "  • Grafana:             http://localhost:3001 (admin/admin)"
-	@echo "  • Prometheus:          http://localhost:9090"
-	@echo "  • RabbitMQ:            http://localhost:15672 (user/password)"
-	@echo ""
-	@echo "Bases de datos:"
-	@echo "  • MySQL (Auth):        localhost:3307"
-	@echo "  • DynamoDB Local:      http://localhost:8000"
-	@echo "  • PostgreSQL (Inv):    localhost:5434"
-	@echo "  • PostgreSQL (Order):  localhost:5432"
+rb-auth: ## Rebuild + restart Auth Service
+	@echo "$(COLOR_INFO)🔨 Rebuilding Auth Service...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-auth-service
+
+rb-users: ## Rebuild + restart Users Service
+	@echo "$(COLOR_INFO)🔨 Rebuilding Users Service...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-users-service
+
+rb-inventory: ## Rebuild + restart Inventory Service
+	@echo "$(COLOR_INFO)🔨 Rebuilding Inventory Service...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-inventory-service
+
+rb-orders: ## Rebuild + restart Order-Product Service
+	@echo "$(COLOR_INFO)🔨 Rebuilding Order-Product Service...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-order-product-service
+
+rb-all: ## Rebuild + restart todos los microservicios
+	@echo "$(COLOR_INFO)🔨 Rebuilding todos los servicios...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --build --force-recreate
+
+logs-gateway: ## Logs del API Gateway
+	@docker logs -f ecommerce-api-gateway
+
+logs-auth: ## Logs del Auth Service
+	@docker logs -f ecommerce-auth-service
+
+logs-users: ## Logs del Users Service
+	@docker logs -f ecommerce-users-service
+
+logs-inventory: ## Logs del Inventory Service
+	@docker logs -f ecommerce-inventory-service
+
+logs-orders: ## Logs del Order-Product Service
+	@docker logs -f ecommerce-order-product-service
+
+logs-localstack: ## Logs de LocalStack
+	@docker logs -f ecommerce-localstack
+
+status: ## Muestra el estado de todos los servicios
+	@echo "$(COLOR_SUCCESS)📊 Estado de servicios:$(COLOR_RESET)\n"
+	@docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep ecommerce || echo "No hay servicios corriendo"
+
