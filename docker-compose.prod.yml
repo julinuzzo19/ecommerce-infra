@@ -1,0 +1,15 @@
+## Override de producción para usar imágenes del registry en lugar de buildear localmente.
+## Uso: docker compose -f docker-compose-dev.yml -f docker-compose.prod.yml up -d ecommerce-auth-service
+##
+## El CD de cada servicio sobreescribe solo su imagen. El resto del stack
+## (DBs, RabbitMQ, observabilidad) sigue corriendo sin interrupciones.
+
+services:
+  ecommerce-auth-service:
+    # Reemplaza el build: local por la imagen ya buildeada por CI en ghcr.io
+    build: !reset null
+    image: ghcr.io/julinuzzo19/ecommerce-auth-service:${IMAGE_TAG:-latest}
+    # En producción no se monta el código fuente — corre desde la imagen
+    volumes: !reset []
+    # En producción corre el binario compilado, no el dev server con hot reload
+    command: !reset null
