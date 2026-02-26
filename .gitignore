@@ -12,3 +12,4 @@ TODO.md
 # LocalStack data
 infrastructure-cdk/.localstack/*
 !infrastructure-cdk/.localstack/.gitignore
+actions-runner/
