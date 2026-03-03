@@ -19,7 +19,6 @@
 
 | Q    | Decisión                                                                                                 |
 | ---- | -------------------------------------------------------------------------------------------------------- |
-| Q001 | Fix mínimo en `gatewayMiddleware.ts` — agregar `return` después del 403                                  |
 | Q002 | Implementar Outbox Pattern completo con worker poller en order-product-service                           |
 | Q003 | `ecommerce-users-service` (NestJS legacy) puede eliminarse — serverless es el definitivo                 |
 | Q004 | CORS no aplica en prod — serverless-users-service solo recibe llamadas internas                          |
