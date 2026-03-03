@@ -13,3 +13,5 @@ services:
     volumes: !reset []
     # En producción corre el binario compilado, no el dev server con hot reload
     command: !reset null
+    ports:
+      - "3010:3010" # solo el puerto de la app, sin el 9229

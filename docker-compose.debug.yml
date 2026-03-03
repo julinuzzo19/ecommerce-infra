@@ -1,0 +1,49 @@
+## Override de debug para adjuntar el debugger de Node.js a un servicio específico.
+## Uso: docker compose -f docker-compose-dev.yml -f docker-compose.debug.yml up <servicio>
+##
+## Ejemplos:
+##   make debug-gateway
+##   make debug-auth
+##   make debug-inventory
+##   make debug-orders
+##
+## Puertos del debugger (host → contenedor):
+##   api-gateway:            9229 → 9229
+##   auth-service:           9230 → 9229
+##   inventory-service:      9232 → 9229
+##   order-product-service:  9233 → 9229
+
+services:
+  ecommerce-api-gateway:
+    ports:
+      - "3000:3000"
+      - "9229:9229"
+    command: ["npm", "run", "debug:docker"]
+
+  ecommerce-auth-service:
+    ports:
+      - "3010:3010"
+      - "9230:9229"
+    command: ["npm", "run", "debug:docker"]
+
+  ecommerce-inventory-service:
+    ports:
+      - "3011:3011"
+      - "9232:9229"
+    command:
+      [
+        "sh",
+        "-c",
+        "echo '🔄 Running migrations...' && npm run migration:run && echo '🚀 Starting application...' && npm run debug:docker",
+      ]
+
+  ecommerce-order-product-service:
+    ports:
+      - "3600:3600"
+      - "9233:9229"
+    command:
+      [
+        "sh",
+        "-c",
+        "echo '🔄 Running database migrations...' && npx prisma db push --schema=./src/shared/infrastructure/db/prisma/schema.prisma --accept-data-loss && echo '🚀 Starting application...' && npm run debug:docker",
+      ]

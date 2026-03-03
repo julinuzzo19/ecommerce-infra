@@ -1,10 +1,11 @@
 # Makefile para Ecommerce Microservices Project
 # Simplifica comandos comunes de desarrollo
 
-.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders aws-scan-users open
+.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders aws-scan-users open debug-gateway debug-auth debug-inventory debug-orders stop-debug-gateway stop-debug-auth stop-debug-inventory stop-debug-orders
 
 # Variables
 COMPOSE_DEV := docker compose -f docker-compose-dev.yml
+COMPOSE_DEBUG := docker compose -f docker-compose-dev.yml -f docker-compose.debug.yml
 COMPOSE_LOCALSTACK := docker compose -f docker-compose.localstack.yml
 CDK_DIR := infrastructure-cdk
 
@@ -205,6 +206,45 @@ open: ## Abre cada microservicio en una ventana VSCode separada (con logs autom�
 
 
 
+##@ Debug (VSCode attach — puerto 9229)
+
+debug-gateway: ## Debug API Gateway (puerto 9229) — adjuntar VSCode
+	@echo "$(COLOR_INFO)🐛 Iniciando API Gateway en modo debug (puerto 9229)...$(COLOR_RESET)"
+	@$(COMPOSE_DEBUG) up ecommerce-api-gateway
+
+debug-auth: ## Debug Auth Service (puerto 9230) — adjuntar VSCode
+	@echo "$(COLOR_INFO)🐛 Iniciando Auth Service en modo debug (puerto 9230)...$(COLOR_RESET)"
+	@$(COMPOSE_DEBUG) up ecommerce-auth-service
+
+debug-inventory: ## Debug Inventory Service (puerto 9232) — adjuntar VSCode
+	@echo "$(COLOR_INFO)🐛 Iniciando Inventory Service en modo debug (puerto 9232)...$(COLOR_RESET)"
+	@$(COMPOSE_DEBUG) up ecommerce-inventory-service
+
+debug-orders: ## Debug Order-Product Service (puerto 9233) — adjuntar VSCode
+	@echo "$(COLOR_INFO)🐛 Iniciando Order-Product Service en modo debug (puerto 9233)...$(COLOR_RESET)"
+	@$(COMPOSE_DEBUG) up ecommerce-order-product-service
+
+stop-debug-gateway: ## Detiene debug y vuelve API Gateway a modo dev normal (con logs)
+	@echo "$(COLOR_INFO)🔄 Volviendo API Gateway a modo dev...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --force-recreate ecommerce-api-gateway
+	@docker logs -f ecommerce-api-gateway
+
+stop-debug-auth: ## Detiene debug y vuelve Auth Service a modo dev normal (con logs)
+	@echo "$(COLOR_INFO)🔄 Volviendo Auth Service a modo dev...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --force-recreate ecommerce-auth-service
+	@docker logs -f ecommerce-auth-service
+
+stop-debug-inventory: ## Detiene debug y vuelve Inventory Service a modo dev normal (con logs)
+	@echo "$(COLOR_INFO)🔄 Volviendo Inventory Service a modo dev...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --force-recreate ecommerce-inventory-service
+	@docker logs -f ecommerce-inventory-service
+
+stop-debug-orders: ## Detiene debug y vuelve Order-Product Service a modo dev normal (con logs)
+	@echo "$(COLOR_INFO)🔄 Volviendo Order-Product Service a modo dev...$(COLOR_RESET)"
+	@$(COMPOSE_DEV) up -d --force-recreate ecommerce-order-product-service
+	@docker logs -f ecommerce-order-product-service
+
+
 ##@ Docker
 
 logs: ## Muestra logs de todos los servicios
@@ -213,22 +253,27 @@ logs: ## Muestra logs de todos los servicios
 rb-gateway: ## Rebuild + restart API Gateway (usa después de cambiar .env o dependencias)
 	@echo "$(COLOR_INFO)🔨 Rebuilding API Gateway...$(COLOR_RESET)"
 	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-api-gateway
+	@docker logs -f ecommerce-api-gateway
 
 rb-auth: ## Rebuild + restart Auth Service
 	@echo "$(COLOR_INFO)🔨 Rebuilding Auth Service...$(COLOR_RESET)"
 	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-auth-service
+	@docker logs -f ecommerce-auth-service
 
 rb-users: ## Rebuild + restart Users Service
 	@echo "$(COLOR_INFO)🔨 Rebuilding Users Service...$(COLOR_RESET)"
 	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-users-service
+	@docker logs -f ecommerce-users-service
 
 rb-inventory: ## Rebuild + restart Inventory Service
 	@echo "$(COLOR_INFO)🔨 Rebuilding Inventory Service...$(COLOR_RESET)"
 	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-inventory-service
+	@docker logs -f ecommerce-inventory-service
 
 rb-orders: ## Rebuild + restart Order-Product Service
 	@echo "$(COLOR_INFO)🔨 Rebuilding Order-Product Service...$(COLOR_RESET)"
 	@$(COMPOSE_DEV) up -d --build --force-recreate ecommerce-order-product-service
+	@docker logs -f ecommerce-order-product-service
 
 rb-all: ## Rebuild + restart todos los microservicios
 	@echo "$(COLOR_INFO)🔨 Rebuilding todos los servicios...$(COLOR_RESET)"

@@ -21,7 +21,7 @@ services:
     depends_on:
       otel-collector:
         condition: service_started
-    command: ["npm", "run", "dev"] # Sobrescribe CMD para recarga en caliente
+    command: ["npm", "run", "dev"]
     volumes:
       - ./ecommerce-api-gateway:/app # Montar el código fuente del gateway para cambios en dev
       - /app/node_modules
@@ -58,7 +58,7 @@ services:
       - "3010:3010"
     networks:
       - ecommerce-network
-    command: ["npm", "run", "dev"] # Sobrescribe CMD para recarga en caliente
+    command: ["npm", "run", "dev"]
     volumes:
       - ./ecommerce-auth-service:/app # Montar el código fuente del servicio de autenticación para cambios en dev
       - /app/node_modules
@@ -139,7 +139,7 @@ services:
         "sh",
         "-c",
         "echo '🔄 Running migrations...' && npm run migration:run && echo '🚀 Starting application...' && npm run dev",
-      ] # Generar, ejecutar migraciones y dev
+      ]
     volumes:
       - ./ecommerce-inventory-service:/app # Montar el código fuente del servicio de inventario para cambios en dev
       - /app/node_modules
@@ -178,12 +178,11 @@ services:
       - "3600:3600"
     networks:
       - ecommerce-network
-    # command: ["npm", "run", "dev"] # Sobrescribe CMD para recarga en caliente
     command: [
         "sh",
         "-c",
         "echo '🔄 Running database migrations...' && npx prisma db push --schema=./src/shared/infrastructure/db/prisma/schema.prisma --accept-data-loss && echo '🚀 Starting application...' && npm run dev",
-      ] # Ejecutar migraciones y luego dev
+      ]
     volumes:
       - ./ecommerce-order-product-service:/app # Montar el código fuente del servicio de orden de productos para cambios en dev
       - /app/node_modules
