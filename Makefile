@@ -1,18 +1,29 @@
 # Makefile para Ecommerce Microservices Project
 # Simplifica comandos comunes de desarrollo
 
-.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders aws-scan-users open debug-gateway debug-auth debug-inventory debug-orders stop-debug-gateway stop-debug-auth stop-debug-inventory stop-debug-orders
+.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test test-health lint typecheck verify preflight check-tools db-users db-inventory db-orders aws-scan-users open debug-gateway debug-auth debug-inventory debug-orders stop-debug-gateway stop-debug-auth stop-debug-inventory stop-debug-orders
 
 # Variables
 COMPOSE_DEV := docker compose -f docker-compose-dev.yml
 COMPOSE_DEBUG := docker compose -f docker-compose-dev.yml -f docker-compose.debug.yml
 COMPOSE_LOCALSTACK := docker compose -f docker-compose.localstack.yml
 CDK_DIR := infrastructure-cdk
+SERVICES := ecommerce-api-gateway ecommerce-auth-service serverless-users-service ecommerce-inventory-service ecommerce-order-product-service
 
 # Color output
 COLOR_RESET := \033[0m
 COLOR_INFO := \033[0;36m
 COLOR_SUCCESS := \033[0;32m
+
+define run_npm_script_all
+	@set -e; \
+	for svc in $(SERVICES); do \
+		if [ -f "$$svc/package.json" ]; then \
+			echo "$(COLOR_INFO)==> $$svc: npm run $(1)$(COLOR_RESET)"; \
+			npm --prefix "$$svc" run $(1) --if-present; \
+		fi; \
+	done
+endef
 
 ##@ General
 
@@ -98,6 +109,29 @@ test-health: ## Verifica el health de todos los microservicios
 	@echo "\nUsers Service:"; curl -s http://localhost:3012/health | jq '.' || echo "❌ No disponible"
 	@echo "\nInventory Service:"; curl -s http://localhost:3011/health | jq '.' || echo "❌ No disponible"
 	@echo "\nOrder-Product Service:"; curl -s http://localhost:3600/health | jq '.' || echo "❌ No disponible"
+
+lint: ## Ejecuta lint en todos los microservicios (si existe script)
+	$(call run_npm_script_all,lint)
+
+test: ## Ejecuta tests en todos los microservicios (si existe script)
+	$(call run_npm_script_all,test)
+
+typecheck: ## Ejecuta typecheck en todos los microservicios (si existe script)
+	$(call run_npm_script_all,typecheck)
+	$(call run_npm_script_all,type-check)
+
+verify: lint typecheck test ## Ejecuta verificación completa (lint + typecheck + test)
+	@echo "$(COLOR_SUCCESS)✅ verify completado$(COLOR_RESET)"
+
+check-tools: ## Verifica herramientas base requeridas
+	@command -v node >/dev/null || (echo "❌ node no instalado" && exit 1)
+	@command -v npm >/dev/null || (echo "❌ npm no instalado" && exit 1)
+	@command -v docker >/dev/null || (echo "❌ docker no instalado" && exit 1)
+	@docker compose version >/dev/null || (echo "❌ docker compose (v2) no disponible" && exit 1)
+	@echo "$(COLOR_SUCCESS)✅ herramientas base OK$(COLOR_RESET)"
+
+preflight: check-tools verify ## Ejecuta validaciones previas al trabajo
+	@echo "$(COLOR_SUCCESS)✅ preflight completado$(COLOR_RESET)"
 
 
 ##@ CDK
