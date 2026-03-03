@@ -1,7 +1,7 @@
 # Makefile para Ecommerce Microservices Project
 # Simplifica comandos comunes de desarrollo
 
-.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders aws-scan-users open-all
+.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test db-users db-inventory db-orders aws-scan-users open
 
 # Variables
 COMPOSE_DEV := docker compose -f docker-compose-dev.yml
@@ -189,7 +189,7 @@ db-orders: ## Abre psql en ecommerce-order-product-db (PostgreSQL - Order-Produc
 
 ##@ VSCode
 
-open-all: ## Abre cada microservicio en una ventana VSCode separada (con logs automáticos al abrir)
+open: ## Abre cada microservicio en una ventana VSCode separada (con logs automáticos al abrir)
 	@echo "$(COLOR_INFO)💻 Abriendo proyectos en VSCode...$(COLOR_RESET)"
 	@echo "$(COLOR_INFO)   Nota: acepta el permiso 'Allow' en VSCode para ejecutar tasks automáticas$(COLOR_RESET)"
 	@code --new-window $(CURDIR)/ecommerce-api-gateway
