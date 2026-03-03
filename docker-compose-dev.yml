@@ -25,6 +25,7 @@ services:
     volumes:
       - ./ecommerce-api-gateway:/app # Montar el código fuente del gateway para cambios en dev
       - /app/node_modules
+      - /app/dist
     healthcheck:
       test:
         [
@@ -62,6 +63,7 @@ services:
     volumes:
       - ./ecommerce-auth-service:/app # Montar el código fuente del servicio de autenticación para cambios en dev
       - /app/node_modules
+      - /app/dist
     healthcheck:
       test:
         [
@@ -100,6 +102,7 @@ services:
     volumes:
       - ./serverless-users-service:/app # Montar el código fuente del servicio de usuarios (serverless) para cambios en dev
       - /app/node_modules
+      - /app/dist
     healthcheck:
       test:
         [
@@ -143,6 +146,7 @@ services:
     volumes:
       - ./ecommerce-inventory-service:/app # Montar el código fuente del servicio de inventario para cambios en dev
       - /app/node_modules
+      - /app/dist
     healthcheck:
       test:
         [
@@ -186,6 +190,7 @@ services:
     volumes:
       - ./ecommerce-order-product-service:/app # Montar el código fuente del servicio de orden de productos para cambios en dev
       - /app/node_modules
+      - /app/dist
     healthcheck:
       test:
         [
