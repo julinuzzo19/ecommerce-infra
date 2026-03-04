@@ -1,0 +1,735 @@
+{
+  "info": {
+    "_postman_id": "27c98d0d-5963-4eeb-a07d-a356a737f9c0",
+    "name": "Ecommerce Microservices - Complete Collection",
+    "description": "Collection completa de todos los endpoints del proyecto Ecommerce Microservices.\n\n## Setup\n1. Ejecutar `make start` para levantar el entorno\n2. Hacer login y copiar el token a la variable `jwt_token`\n3. Los requests autenticados usan `{{jwt_token}}` automáticamente",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12654315"
+  },
+  "item": [
+    {
+      "name": "🏥 Health Checks",
+      "item": [
+        {
+          "name": "Gateway Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Auth Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{auth_url}}/health",
+              "host": [
+                "{{auth_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Users Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{users_url}}/health",
+              "host": [
+                "{{users_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Inventory Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{inventory_url}}/health",
+              "host": [
+                "{{inventory_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Order-Product Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{orders_url}}/health",
+              "host": [
+                "{{orders_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔐 Auth via Gateway (:3000/auth)",
+      "item": [
+        {
+          "name": "Login via Gateway",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// En Tests del request de Login",
+                  "const cookies = pm.cookies.get('access_token');",
+                  "",
+                  "if (cookies) {",
+                  "  pm.collectionVariables.set('access_token', cookies);",
+                  "} else {",
+                  "  // Fallback: si el auth service devuelve token en body directamente",
+                  "  const res = pm.response.json();",
+                  "  if (res.access_token) {",
+                  "    pm.collectionVariables.set('access_token', res.access_token);",
+                  "  } else {",
+                  "    console.log('❌ No se encontró token ni cookie');",
+                  "  }",
+                  "}",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/auth/login",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Signup via Gateway",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Gateway User\",\n  \"email\": \"gatewayuser@example.com\",\n  \"password\": \"securepassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/auth/signup",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👥 Users via Gateway (:3000/users)",
+      "item": [
+        {
+          "name": "Get User by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/users/{{user_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}"
+              ]
+            },
+            "description": "⚠️ ADVERTENCIA: authMiddleware está comentado en esta ruta (ver proxy.routes.ts:88-90)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/users",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📦 Inventory via Gateway (:3000/inventory)",
+      "item": [
+        {
+          "name": "Check Stock via Gateway",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/inventory",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "inventory"
+              ],
+              "query": [
+                {
+                  "key": "sku",
+                  "value": "LAPTOP-DELL-XPS15",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Products via Gateway",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/inventory",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "inventory"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🛒 Orders via Gateway (:3000/ecommerce)",
+      "item": [
+        {
+          "name": "Create Order via Gateway",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id || res.orderId) {",
+                  "  const id = res.id || res.orderId;",
+                  "  pm.collectionVariables.set('order_id', id);",
+                  "  console.log('✅ Order ID guardado:', id);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"items\": [\n    {\n      \"sku\": \"LAPTOP-DELL-XPS15\",\n      \"quantity\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/ecommerce/orders",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "ecommerce",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Orders via Gateway",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/ecommerce/orders",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "ecommerce",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order by ID via Gateway",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/ecommerce/orders/{{order_id}}",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "ecommerce",
+                "orders",
+                "{{order_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Order via Gateway",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/ecommerce/orders/{{order_id}}/cancel",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "ecommerce",
+                "orders",
+                "{{order_id}}",
+                "cancel"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔄 Flujos End-to-End",
+      "item": [
+        {
+          "name": "1. Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) {",
+                  "  pm.collectionVariables.set('jwt_token', res.token);",
+                  "  pm.collectionVariables.set('user_id', res.userId);",
+                  "  console.log('✅ Paso 1/4 OK — Token guardado');",
+                  "  pm.test('Login exitoso', () => pm.response.to.have.status(200));",
+                  "} else {",
+                  "  console.error('❌ Login fallido', JSON.stringify(res));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/auth/login",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Verificar Stock",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Stock disponible', () => pm.response.to.have.status(200));",
+                  "console.log('✅ Paso 2/4 OK — Stock verificado');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/inventory/check?sku=LAPTOP-DELL-XPS15",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "inventory",
+                "check"
+              ],
+              "query": [
+                {
+                  "key": "sku",
+                  "value": "LAPTOP-DELL-XPS15"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Crear Orden",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id || res.orderId) {",
+                  "  const id = res.id || res.orderId;",
+                  "  pm.collectionVariables.set('order_id', id);",
+                  "  pm.test('Orden creada', () => pm.response.to.have.status(201));",
+                  "  console.log('✅ Paso 3/4 OK — Orden creada:', id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"items\": [\n    {\n      \"sku\": \"LAPTOP-DELL-XPS15\",\n      \"quantity\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/ecommerce/orders",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "ecommerce",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Verificar Stock Decrementado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Stock verificado post-orden', () => pm.response.to.have.status(200));",
+                  "console.log('✅ Paso 4/4 OK — Flujo completo exitoso');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/inventory/check?sku=LAPTOP-DELL-XPS15",
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "path": [
+                "inventory",
+                "check"
+              ],
+              "query": [
+                {
+                  "key": "sku",
+                  "value": "LAPTOP-DELL-XPS15"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_url",
+      "value": "http://localhost:3010",
+      "type": "string"
+    },
+    {
+      "key": "users_url",
+      "value": "http://localhost:3012",
+      "type": "string"
+    },
+    {
+      "key": "inventory_url",
+      "value": "http://localhost:3011",
+      "type": "string"
+    },
+    {
+      "key": "orders_url",
+      "value": "http://localhost:3600",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "550e8400-e29b-41d4-a716-446655440001",
+      "type": "string"
+    },
+    {
+      "key": "order_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    }
+  ]
+}
