@@ -21,6 +21,8 @@ services:
     depends_on:
       otel-collector:
         condition: service_started
+      redis:
+        condition: service_healthy
     command: ["npm", "run", "dev"]
     volumes:
       - ./ecommerce-api-gateway:/app # Montar el código fuente del gateway para cambios en dev
@@ -428,6 +430,25 @@ services:
       - ecommerce-network
 
   # ====================================
+  # REDIS
+  # ====================================
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ====================================
   # RABBITMQ
   # ====================================
   rabbitmq:
@@ -475,6 +496,9 @@ volumes:
     driver: local
   # Order and Product database (PostgreSQL)
   order_product_postgres_data:
+    driver: local
+  # Redis data
+  redis_data:
     driver: local
   # RabbitMQ data and logs
   rabbitmq_data:

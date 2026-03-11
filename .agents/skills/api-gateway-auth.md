@@ -1,13 +1,17 @@
 ---
 name: api-gateway-auth
-description: Patrón de autenticación centralizada en el API Gateway, token cache en memoria, propagación de contexto de usuario via headers, y rate limiting diferenciado
+description: Autenticación centralizada en el API Gateway con refresh token, Redis cache distribuido, cookie HttpOnly, propagación de contexto de usuario via headers y rate limiting diferenciado
 category: security
 priority: critical
 applies_to:
   - ecommerce-api-gateway/src/middleware/auth.middleware.ts
+  - ecommerce-api-gateway/src/utils/auth.cache.ts
+  - ecommerce-api-gateway/src/config/redis.ts
   - ecommerce-api-gateway/src/routes/proxy.routes.ts
-  - ecommerce-api-gateway/src/config/config.ts
-last_validated: 2026-02-11
+  - ecommerce-auth-service/src/auth/auth.controller.ts
+  - ecommerce-auth-service/src/auth/auth.service.ts
+  - ecommerce-auth-service/src/auth/refresh-token.entity.ts
+last_validated: 2026-03-11
 conflicts_with: []
 requires_human_approval: true
 ---
@@ -16,29 +20,57 @@ requires_human_approval: true
 
 ## Descripción
 
-El API Gateway actúa como punto único de entrada y autoridad de autenticación. Valida tokens JWT delegando al Auth Service y cachea la validación para optimizar rendimiento.
+El API Gateway actúa como punto único de entrada y autoridad de autenticación. Valida tokens JWT delegando al Auth Service, cachea la validación en **Redis distribuido**, y soporta renovación automática via **refresh token con rotación y detección de robo**.
 
 ---
 
-## Implementación Real
+## Flujo completo de autenticación
 
-### Flujo de Autenticación
+### Login
+```
+POST /auth/login
+← Set-Cookie: access_token=JWT; HttpOnly; Secure; SameSite=Strict             (cookie: 30d, JWT: 15min)
+← Set-Cookie: refresh_token=UUID; HttpOnly; Secure; SameSite=Strict; Path=/auth/refresh  (7 días)
+```
+El refresh token se guarda hasheado (SHA-256) en tabla MySQL `refresh_token`.
 
+### Request normal (access token vigente)
 ```
 Request entrante
-  ├── Tiene header x-gateway-secret?
-  │   ├── Sí + valor correcto → isInternalService = true → next()
-  │   └── Sí + valor incorrecto → sigue al paso 2 (no rechaza aún)
-  └── Tiene header Authorization: Bearer <token>?
-      ├── No → 401 Unauthorized
-      ├── Sí → ¿token en cache y no expirado?
-      │   ├── Sí → set headers → next()
-      │   └── No → axios.get auth-service/auth/validate (timeout: 5s)
-      │       ├── valid: true → cache (5min) → set headers → next()
-      │       └── valid: false → 401 Unauthorized
+  ├── cookieToHeaderMiddleware: lee cookie access_token → Authorization: Bearer <jwt>
+  ├── authMiddleware:
+  │   ├── x-gateway-secret correcto → isInternalService = true → next()
+  │   └── Authorization: Bearer <jwt>
+  │       ├── Hit Redis (key: token:<jwt>, TTL: 5min) → set headers → next()
+  │       └── Miss Redis → axios.get auth-service/auth/validate (timeout: 5s)
+  │           ├── valid: true → setex Redis 5min → set headers → next()
+  │           └── valid: false → 401
 ```
 
-### Headers Propagados a Microservicios
+### Renovación (access token expirado)
+```
+POST /auth/refresh  (cookie refresh_token se envía automáticamente por Path=/auth/refresh)
+Auth Service:
+  1. SHA-256(raw_token) → busca en DB
+  2. ¿revoked? → revocar familia entera → 401 (detección de robo)
+  3. ¿expirado? → revocar → 401
+  4. revokeById(actual) + generateRefreshToken(mismo familyId)
+  5. signAsync(nuevo JWT)
+← Set-Cookie: access_token=JWT nuevo
+← Set-Cookie: refresh_token=UUID nuevo
+```
+
+### Logout
+```
+GET /auth/logout
+Auth Service: revokeRefreshToken(raw) → revocado en DB
+← clearCookie(access_token)
+← clearCookie(refresh_token)
+```
+
+---
+
+## Headers Propagados a Microservicios
 
 ```typescript
 req.headers['x-user-id']        = user.id;
@@ -47,28 +79,73 @@ req.headers['x-user-role']      = user.role;
 req.headers['x-gateway-secret'] = config.security.gatewaySecret;
 ```
 
-Todos los microservicios downstream reciben el contexto del usuario autenticado sin necesidad de validar el JWT nuevamente.
+---
 
-### Token Cache
+## Redis Cache (distribuido)
 
-```typescript
-// ecommerce-api-gateway/src/middleware/auth.middleware.ts:30
-const tokenCache = new Map<string, TokenCacheEntry>();
-// TTL: 5 minutos
-// Limpieza: cada 60 segundos
+```
+Archivos:
+  ecommerce-api-gateway/src/config/redis.ts       — cliente ioredis con backoff
+  ecommerce-api-gateway/src/utils/auth.cache.ts   — getCachedUser / setCachedUser
 ```
 
-**Limitación conocida:** Cache en memoria del proceso. No funciona con múltiples instancias del gateway. Para escalar horizontalmente, migrar a Redis (ver Q003 en questions-log.md).
+- `lazyConnect: true` — no conecta al instanciar, se dispara en `server.ts`
+- `retryStrategy`: backoff exponencial + jitter (±10%), techo 30s, max 10 intentos
+- Eventos de ciclo de vida logueados: connect, ready, error, close, reconnecting, end
+- Fallback silencioso: si Redis no responde, llama al Auth Service directamente
 
-### Rate Limiting Diferenciado
+**Clave Redis:** `token:<jwt>` → JSON del UserInfo
+**TTL:** 300 segundos (5 minutos)
 
-```typescript
-// ecommerce-api-gateway/src/config/config.ts:54-70
-auth:      { windowMs: 15min, maxRequests: 20  }  // Rutas /auth/*
-protected: { windowMs: 1min,  maxRequests: 300 }  // Rutas /ecommerce/*, /inventory/*
+---
+
+## Refresh Token — Entidad DB (MySQL)
+
+```
+Tabla: refresh_token (TypeORM auto-sync en dev)
+Archivo: ecommerce-auth-service/src/auth/refresh-token.entity.ts
 ```
 
-### Rutas y Protección
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | uuid PK | Identificador del registro |
+| `userId` | uuid | Usuario dueño del token |
+| `tokenHash` | string | SHA-256 del token opaco — nunca se persiste el raw |
+| `familyId` | uuid | Agrupa tokens de una misma sesión |
+| `expiresAt` | Date | 7 días desde emisión |
+| `revoked` | boolean | Default false |
+
+**Detección de robo:** si se intenta usar un token con `revoked: true` → se revoca toda la familia (`familyId`) → logout forzado de todos los dispositivos de esa sesión.
+
+---
+
+## Configuración de Cookies
+
+```typescript
+// access_token
+{ httpOnly: true, secure: prod, sameSite: 'strict', maxAge: 30días }
+// El JWT interno expira en JWT_EXPIRES_IN (default: 15m)
+
+// refresh_token
+{ httpOnly: true, secure: prod, sameSite: 'strict', maxAge: 7días, path: '/auth/refresh' }
+// Path restringido: la cookie solo se envía al endpoint de renovación
+```
+
+---
+
+## Variables de Entorno Requeridas
+
+| Variable | Servicio | Descripción |
+|---|---|---|
+| `REDIS_HOST` | Gateway | Host Redis (docker: `redis`) |
+| `REDIS_PORT` | Gateway | Puerto Redis (default: `6379`) |
+| `JWT_EXPIRES_IN` | Auth | TTL del access token (default: `15m`) |
+| `JWT_SECRET` | Auth | Secreto para firmar JWT |
+| `GATEWAY_SECRET` | Ambos | Secreto compartido comunicación interna |
+
+---
+
+## Rutas y Protección
 
 | Ruta | Auth | Rate Limit |
 |---|---|---|
@@ -78,29 +155,41 @@ protected: { windowMs: 1min,  maxRequests: 300 }  // Rutas /ecommerce/*, /invent
 | `/inventory/*` | authMiddleware | protectedRateLimiter (300/1min) |
 | `/users/*` | **DESHABILITADO** | **DESHABILITADO** |
 
-> **ADVERTENCIA**: Las rutas `/users/*` tienen `authMiddleware` y `protectedRateLimiter` comentados. Ver `proxy.routes.ts:88-90`.
+> **ADVERTENCIA**: Las rutas `/users/*` tienen `authMiddleware` y `protectedRateLimiter` comentados.
 
 ---
 
 ## Reglas para Agentes
 
-1. **Nunca exponer** `x-gateway-secret` en logs o respuestas
-2. **Siempre propagar** los 4 headers de contexto cuando se autentique exitosamente
-3. Si se añade una nueva ruta protegida, aplicar `authMiddleware` + `protectedRateLimiter`
-4. El token cache asume una sola instancia; documentar si se escala horizontalmente
-5. Los microservicios NO deben validar JWT — solo leer los headers propagados por el Gateway
-6. Antes de deshabilitar o modificar authMiddleware, requerir aprobación humana
+1. **Nunca exponer** `x-gateway-secret` ni `tokenHash` en logs o respuestas
+2. **Siempre propagar** los 4 headers de contexto en autenticación exitosa
+3. Los microservicios NO deben validar JWT — solo leer los headers del Gateway
+4. El refresh token se hashea antes de guardar — nunca persistir el raw token
+5. Si se rota el refresh token, siempre mantener el mismo `familyId`
+6. Redis es opcional — el gateway arranca en modo degradado si no responde
+7. Si se añade una nueva ruta protegida: `authMiddleware` + `protectedRateLimiter`
+8. Antes de modificar el flujo de autenticación, requerir aprobación humana
 
 ---
 
-## Manejo de Errores del Auth Service
+## Manejo de Errores
 
-| Condición | Código respuesta |
+| Condición | Código |
 |---|---|
-| Auth Service no disponible (ECONNREFUSED) | 503 Service Unavailable |
-| Timeout (>5s) | 504 Gateway Timeout |
-| Token inválido (401 del auth service) | 401 Unauthorized |
-| Token inválido (válido: false en body) | 401 Unauthorized |
+| Auth Service no disponible (ECONNREFUSED) | 503 |
+| Timeout Auth Service (>5s) | 504 |
+| Token inválido o expirado | 401 |
+| Refresh token reutilizado (posible robo) | 401 + revocación familia |
+| Refresh token no proporcionado | 401 |
+
+---
+
+## Comandos Makefile
+
+```bash
+make redis-cli    # [83] Shell interactivo Redis
+make redis-flush  # [84] Limpiar caché tokens (invalida sesiones activas)
+```
 
 ---
 
@@ -109,3 +198,4 @@ protected: { windowMs: 1min,  maxRequests: 300 }  // Rutas /ecommerce/*, /invent
 | Date | Change | Author |
 |---|---|---|
 | 2026-02-11 | Creación inicial por bootstrap | Agent |
+| 2026-03-11 | Refresh token + Redis distribuido + cookie HttpOnly + retries/backoff | Agent |

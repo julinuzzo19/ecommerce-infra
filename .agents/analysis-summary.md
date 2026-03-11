@@ -59,8 +59,9 @@ Sistema de e-commerce distribuido basado en microservicios Node.js/TypeScript. A
 ### 5. API Gateway Pattern
 **Implementación real:**
 - Proxy reverso con `http-proxy-middleware`
-- Autenticación centralizada por Bearer token
-- Caché de tokens en memoria (Map, 5 min TTL) — no distribuida
+- Autenticación via cookie HttpOnly (`access_token`) o Bearer header — `cookieToHeaderMiddleware` normaliza ambos
+- ~~Caché de tokens en memoria (Map)~~ → **Resuelto 2026-03-11**: Redis distribuido (ioredis, TTL 5min, backoff exponencial + jitter, modo degradado)
+- Refresh token con rotación automática + detección de robo por `familyId` (tabla MySQL)
 - Rate limiting diferenciado: auth (20 req/15min), protegido (300 req/1min)
 - Propagación de contexto de usuario via headers (`x-user-id`, `x-user-email`, `x-user-role`)
 - Header `x-gateway-secret` para identificar requests internas
@@ -94,15 +95,11 @@ El evento RabbitMQ se publica **dentro** de la transacción Prisma en `CreateOrU
 
 **Archivo:** `ecommerce-order-product-service/src/domain/order/application/CreateOrUpdateOrderUseCase.ts:43-57`
 
-### CRÍTICO — Bug en gateway middleware de Inventory
-En `ecommerce-inventory-service/src/infrastructure/middlewares/gatewayMiddleware.ts:20`, el código responde 403 pero NO hace `return` antes de llamar `next()`. Cualquier request con secret incorrecto continúa procesándose después de enviar la respuesta de error.
+### ~~CRÍTICO — Bug en gateway middleware de Inventory~~ [RESUELTO 2026-03-11]
+~~En `gatewayMiddleware.ts:20`, el código responde 403 pero NO hace `return`.~~ El `return` está presente correctamente en la implementación actual.
 
-**Archivo:** `ecommerce-inventory-service/src/infrastructure/middlewares/gatewayMiddleware.ts:20-24`
-
-### ALTO — Token cache no distribuida
-El gateway cachea tokens JWT en `Map<string, TokenCacheEntry>` en memoria del proceso. Con múltiples instancias del gateway, un token revocado en Auth Service sigue siendo válido en instancias que lo tienen cacheado.
-
-**Archivo:** `ecommerce-api-gateway/src/middleware/auth.middleware.ts:30`
+### ~~ALTO — Token cache no distribuida~~ [RESUELTO 2026-03-11]
+~~El gateway cachea tokens JWT en `Map` en memoria del proceso.~~ Migrado a Redis distribuido con ioredis. El gateway arranca en modo degradado si Redis no responde — fallback al Auth Service.
 
 ### ALTO — `prisma db push --accept-data-loss` en docker-compose
 El servicio `ecommerce-order-product-service` usa `prisma db push --accept-data-loss` al iniciar en dev. Esto puede destruir datos sin advertencia.

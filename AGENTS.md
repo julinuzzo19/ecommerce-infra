@@ -59,14 +59,22 @@ ecommerce/
 │
 ├── ecommerce-api-gateway/             # Express 5 + http-proxy-middleware  [Puerto 3000]
 │   └── src/
-│       ├── middleware/                # auth, rate-limit, cookie, request-id, logger
+│       ├── middleware/                # auth, rate-limit, cookie-to-header, request-id, logger
+│       ├── config/redis.ts            # Cliente ioredis con backoff exponencial + jitter
+│       ├── utils/auth.cache.ts        # getCachedUser / setCachedUser sobre Redis
+│       ├── types/auth.types.ts        # UserInfo interface compartida
 │       ├── routes/proxy.routes.ts     # Definición de proxies por servicio
 │       ├── config/config.ts           # Validación de env vars al arranque
 │       └── utils/                     # logger (Winston), custom helpers
 │
 ├── ecommerce-auth-service/            # NestJS + TypeORM + MySQL  [Puerto 3010]
 │   └── src/
-│       ├── auth/                      # Login, signup, validateToken, guards
+│       ├── auth/                      # Login, signup, refresh, validateToken, guards
+│       │   ├── refresh-token.entity.ts            # Tabla refresh_token con familyId
+│       │   └── repositories/
+│       │       ├── refresh-token.repository.interface.ts
+│       │       └── refresh-token.typeorm.repository.ts
+│       ├── config/cookies.ts          # cookieOptions + refreshTokenCookieOptions
 │       ├── services/                  # UsersService (CRUD sobre MySQL)
 │       └── roles/                     # Role enum + RolesGuard
 │
@@ -108,6 +116,7 @@ ecommerce/
 | Inventory Service | Express 5 + TypeORM 0.3 + PostgreSQL 15 |
 | Order-Product Service | Express 5 + Prisma 7 + PostgreSQL 15 |
 | Message Broker | RabbitMQ 3 (topic exchange `orders`) |
+| Cache distribuido | Redis 7 (token cache en Gateway, ioredis) |
 | Observabilidad | OpenTelemetry + Tempo + Prometheus + Grafana + Loki |
 | Monitoreo APM | New Relic (solo order-product service) |
 | Serverless local | serverless-offline + DynamoDB local |
@@ -118,11 +127,26 @@ ecommerce/
 
 ### 1. Autenticación de Usuario
 ```
-Cliente → Gateway (Bearer token)
-  → axios.get auth-service/auth/validate
-  → token válido → set headers (x-user-id, x-user-email, x-user-role, x-gateway-secret)
-  → proxy a servicio destino
-  [Caché en memoria: 5 min, no distribuida]
+Login:
+  Cliente → POST /auth/login
+  ← Set-Cookie: access_token=JWT (HttpOnly, JWT: 15min / cookie: 30d)
+  ← Set-Cookie: refresh_token=UUID (HttpOnly, 7d, Path=/auth/refresh)
+  Auth Service guarda SHA-256(refresh_token) en tabla refresh_token (MySQL)
+
+Request normal:
+  Cliente → Gateway (cookie access_token)
+  → cookieToHeaderMiddleware: cookie → Authorization: Bearer
+  → authMiddleware:
+      Redis hit (TTL 5min) → set headers → proxy
+      Redis miss → axios.get auth-service/auth/validate → Redis setex → set headers → proxy
+  → headers propagados: x-user-id, x-user-email, x-user-role, x-gateway-secret
+
+Renovación:
+  POST /auth/refresh (cookie refresh_token — solo se envía por path restringido)
+  → Auth Service: SHA-256 → busca en DB → detecta reutilización → rota → nuevas cookies
+
+Logout:
+  GET /auth/logout → Auth Service: revoca refresh_token en DB → clearCookie ambas cookies
 ```
 
 ### 2. Creación de Orden
@@ -143,7 +167,7 @@ Cliente → Gateway → Order-Product Service
 Cliente → Gateway → Auth Service
   → Auth crea User en Users Service (HTTP interno)
   → Auth persiste AuthCredentials (hash scrypt) en MySQL
-  → Auth retorna JWT
+  → Auth genera access_token + refresh_token → setea ambas cookies
 ```
 
 ---
@@ -156,6 +180,7 @@ Cliente → Gateway → Auth Service
 | Users (nuevo) | DynamoDB Local / AWS | 8000 | AWS SDK v3 | Manual (scripts) |
 | Inventory | PostgreSQL 15 (`inventory_db`) | 5434 | TypeORM | `migration:run` al inicio |
 | Order-Product | PostgreSQL 15 (`order_product_db`) | 5432 | Prisma | `prisma db push --accept-data-loss` |
+| Gateway cache | Redis 7 | 6379 | ioredis | — (TTL-based) |
 
 > **WARNING**: `prisma db push --accept-data-loss` en docker-compose-dev.yml puede causar pérdida de datos en ambientes compartidos.
 
@@ -176,7 +201,6 @@ Cliente → Gateway → Auth Service
 ### Seguridad entre servicios
 - Header `x-gateway-secret`: secreto compartido para verificar origen Gateway
 - Servicios individuales validan este header via `gatewayMiddleware`
-- **BUG CRÍTICO CONOCIDO**: En `ecommerce-inventory-service/src/infrastructure/middlewares/gatewayMiddleware.ts` línea 20, el middleware llama `next()` incluso cuando la validación falla (solo responde 403 pero NO hace return). Ver `questions-log.md` Q001.
 
 ---
 
@@ -228,13 +252,16 @@ shared/           # Abstracciones compartidas dentro del servicio
 
 ### Riesgos Activos
 1. **[CRÍTICO]** Evento RabbitMQ publicado dentro de transacción Prisma — puede publicar sin confirmar o no publicar si falla la transacción. Ver `skills/event-driven-outbox.md`.
-2. **[CRÍTICO]** Bug en `gatewayMiddleware.ts` de inventory-service — llama `next()` incluso en 403.
-3. **[ALTO]** Caché de tokens en memoria del Gateway — no funciona con múltiples instancias.
-4. **[ALTO]** `prisma db push --accept-data-loss` en dev compose — riesgo de pérdida de datos.
-5. **[MEDIO]** Credenciales hardcodeadas en docker-compose-dev.yml (`root:root`, `user:password`).
-6. **[MEDIO]** `/users` endpoint en Gateway no tiene `authMiddleware` ni rate limiting activos (comentados).
-7. **[MEDIO]** `serverless-users-service` CORS configurado con `allowedOrigins: ["*"]` — excesivamente permisivo.
-8. **[BAJO]** Rol de usuario hardcodeado como `'USER'` en `auth.service.ts` línea 62 — no usa el enum `Role`.
+2. **[ALTO]** `prisma db push --accept-data-loss` en dev compose — riesgo de pérdida de datos.
+3. **[MEDIO]** Credenciales hardcodeadas en docker-compose-dev.yml (`root:root`, `user:password`).
+4. **[MEDIO]** `/users` endpoint en Gateway no tiene `authMiddleware` ni rate limiting activos (comentados).
+5. **[MEDIO]** `serverless-users-service` CORS configurado con `allowedOrigins: ["*"]` — excesivamente permisivo.
+6. **[BAJO]** Rol de usuario hardcodeado como `'USER'` en `auth.service.ts` — no usa el enum `Role`.
+
+### Resueltos
+- ~~**[ALTO]** Caché de tokens en memoria del Gateway — no funciona con múltiples instancias.~~ → **Resuelto 2026-03-11**: Redis distribuido con ioredis + backoff exponencial + jitter.
+- ~~**[CRÍTICO]** Bug en `gatewayMiddleware.ts` de inventory-service — llama `next()` incluso en 403.~~ → **Resuelto**: `return` presente en línea 22.
+- ~~JWT expira en 1h pero cookie dura 30 días → usuario recibe 401 sin poder renovar.~~ → **Resuelto 2026-03-11**: JWT ahora 15min + refresh token con rotación automática y detección de robo.
 
 ### Pendientes del TODO.md
 - Outbox Pattern (garantía de entrega de eventos)
@@ -243,7 +270,7 @@ shared/           # Abstracciones compartidas dentro del servicio
 - Idempotencia en consumidores
 - Observabilidad completa en todos los servicios
 - CI/CD con GitHub Actions
-- Customer de Order-Product sincronizado con Users Service
+- Customer de Order-Product sincronizado con Users Service (via UserCreated event)
 - Dashboard en Grafana
 
 ---
@@ -266,6 +293,7 @@ shared/           # Abstracciones compartidas dentro del servicio
 - Cambio arquitectónico significativo
 - Reorganización de estructura de carpetas
 - Nuevas convenciones validadas
+- Riesgos resueltos (mover a sección Resueltos)
 
 ### Cuándo actualizar Skills:
 - Variación de patrón en el código real

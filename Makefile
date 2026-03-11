@@ -1,8 +1,8 @@
 # Makefile para Ecommerce Microservices Project
 # Simplifica comandos comunes de desarrollo
 
-.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test test-health lint typecheck verify preflight check-tools db-users db-inventory db-orders aws-scan-users open debug-gateway debug-auth debug-inventory debug-orders stop-debug-gateway stop-debug-auth stop-debug-inventory stop-debug-orders
-.PHONY: 1 20 21 22 23 24 30 31 32 33 34 35 36 40 41 42 43 44 45 46 50 51 52 53 54 60 61 62 63 64 70 71 72 73 74 80 81 82 90 100 101 102 103 104 105 106 107 110 111 112 113 114 115 116 117 118 119 120 121 122 123
+.PHONY: help start stop clean logs status cdk-diff cdk-deploy cdk-destroy test test-health lint typecheck verify preflight check-tools db-users db-inventory db-orders redis-cli redis-flush aws-scan-users open debug-gateway debug-auth debug-inventory debug-orders stop-debug-gateway stop-debug-auth stop-debug-inventory stop-debug-orders
+.PHONY: 1 20 21 22 23 24 30 31 32 33 34 35 36 40 41 42 43 44 45 46 50 51 52 53 54 60 61 62 63 64 70 71 72 73 74 80 81 82 83 84 90 100 101 102 103 104 105 106 107 110 111 112 113 114 115 116 117 118 119 120 121 122 123
 
 # Variables
 COMPOSE_DEV := docker compose -f docker-compose-dev.yml
@@ -222,6 +222,14 @@ db-inventory: ## [81] psql shell (Inventory Service, puerto 5434)
 db-orders: ## [82] psql shell (Order-Product Service, puerto 5432)
 	@docker exec -it -e PGOPTIONS="--search_path=app" ecommerce-order-product-db psql -U root -d order_product_db
 
+redis-cli: ## [83] Shell interactivo de Redis
+	@docker exec -it redis redis-cli
+
+redis-flush: ## [84] Limpia toda la caché de Redis (⚠️ expira todas las sesiones activas)
+	@echo "$(COLOR_INFO)⚠️  Limpiando caché Redis (todas las sesiones activas serán invalidadas)...$(COLOR_RESET)"
+	@docker exec -it redis redis-cli FLUSHALL
+	@echo "$(COLOR_SUCCESS)✅ Caché Redis limpiada$(COLOR_RESET)"
+
 
 ##@ VSCode
 
@@ -375,6 +383,8 @@ status: ## [123] Muestra el estado de todos los servicios
 80: db-users
 81: db-inventory
 82: db-orders
+83: redis-cli
+84: redis-flush
 90: open
 100: debug-gateway
 101: debug-auth
