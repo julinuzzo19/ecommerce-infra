@@ -1,6 +1,8 @@
 services:
   localstack:
     image: localstack/localstack:latest
+    env_file:
+      - .env.localstack
     container_name: ecommerce-localstack
     ports:
       # Edge port - single entry point for all services
